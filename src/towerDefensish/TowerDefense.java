@@ -25,7 +25,10 @@ import com.jme3.math.Ray;
 import com.jme3.math.Vector2f;
 import com.jme3.math.Vector3f;
 import com.jme3.scene.Geometry;
+import com.jme3.scene.Spatial;
+import com.jme3.texture.Texture;
 import com.jme3.ui.Picture;
+import com.jme3.util.SkyFactory;
 
 /**
  *
@@ -90,6 +93,15 @@ public class TowerDefense extends SimpleApplication implements AnimEventListener
         initGui();
         inGameSettings();
 
+        Texture west = assetManager.loadTexture("Textures/Sky/Lagoon/lagoon_west.jpg");
+        Texture east = assetManager.loadTexture("Textures/Sky/Lagoon/lagoon_east.jpg");
+        Texture north = assetManager.loadTexture("Textures/Sky/Lagoon/lagoon_north.jpg");
+        Texture south = assetManager.loadTexture("Textures/Sky/Lagoon/lagoon_south.jpg");
+        Texture up = assetManager.loadTexture("Textures/Sky/Lagoon/lagoon_up.jpg");
+        Texture down = assetManager.loadTexture("Textures/Sky/Lagoon/lagoon_down.jpg");
+        Spatial sky = SkyFactory.createSky(assetManager, west, east, north, south, up, down);
+        rootNode.attachChild(sky);
+
     }
 
     @Override
@@ -108,9 +120,9 @@ public class TowerDefense extends SimpleApplication implements AnimEventListener
                 shiftHeld = false;
                 inputManager.setCursorVisible(false);
                 flyCam.setEnabled(false);
-                Vector3f c = new Vector3f(0.0f, 30.0f, 55.0f);
+                Vector3f c = new Vector3f(0.0f, 28.0f, 75.0f);
                 cam.setLocation(c);
-                cam.setRotation(new Quaternion(0.0f, 1.0f, -0.1f, 0));
+                cam.setRotation(new Quaternion(0.0f, 1.0f, 0.0f, 0));
             }
             if (name.equals(MAPPING_SHOOT) && !isPressed && shiftHeld) {
                 state.shoot();
@@ -174,7 +186,7 @@ public class TowerDefense extends SimpleApplication implements AnimEventListener
         }
     };
 
-        private void initGui() {
+    private void initGui() {
         //Selection light
         lamp.setColor(ColorRGBA.Cyan);
         lamp.setPosition(new Vector3f(0, 3, 0));
@@ -328,7 +340,7 @@ public class TowerDefense extends SimpleApplication implements AnimEventListener
         }
 
     }
-    
+
     private CollisionResults clickRayCollission() {
         CollisionResults results = new CollisionResults();
         Vector2f click2d = inputManager.getCursorPosition();

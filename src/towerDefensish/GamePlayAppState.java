@@ -34,6 +34,7 @@ import com.jme3.scene.Spatial;
 import com.jme3.scene.shape.Line;
 import com.jme3.scene.shape.Sphere;
 import java.util.ArrayList;
+import spellControls.NormalSpellControl;
 
 /**
  *
@@ -150,7 +151,7 @@ public class GamePlayAppState extends AbstractAppState {
         if (cooldown > 5) {
             cooldown = 0;
             System.out.println(mana);
-            Geometry ballGeo = new Geometry("Spell", spellMesh);
+            Geometry ballGeo = new Geometry("NormalSpell", spellMesh);
             Material mat = new Material(assetManager, "Common/MatDefs/Light/Lighting.j3md");
             ballGeo.setMaterial(mat);
             ballGeo.setLocalTranslation(cam.getLocation());
@@ -170,9 +171,7 @@ public class GamePlayAppState extends AbstractAppState {
                     isNewInfo = true;
                     System.out.println("Mana too low to cast a Fireball!");
                 }
-            }
-
-            if (frostBoltOn) {
+            } else if (frostBoltOn) {
                 if (mana > 15) {
                     ballGeo.setName("Frostbolt");
                     TextureKey ice = new TextureKey("Interface/Pics/chrislinder_ice_6.png", false);
@@ -184,11 +183,13 @@ public class GamePlayAppState extends AbstractAppState {
                     isNewInfo = true;
                     System.out.println("Mana too low to cast a Frostbolt!");
                 }
-            }
-            if (frostNovaOn) {
+            } else if (frostNovaOn) {
                 TextureKey ice = new TextureKey("Interface/Pics/ice-block.png", false);
                 mat.setTexture("DiffuseMap", assetManager.loadTexture(ice));
                 //ballGeo.addControl(new FrostBoltControl(assetManager, ballNode, ballGeo));
+            } else {
+                ballGeo.addControl(new NormalSpellControl(this, assetManager, ballNode, ballGeo, bulletAppState));
+                mana = mana - 5;
             }
             mat.setColor("Specular", ColorRGBA.White.mult(ColorRGBA.Red));
             mat.setFloat("Shininess", 200f);
@@ -362,9 +363,9 @@ public class GamePlayAppState extends AbstractAppState {
         rootNode.addLight(al);
 
         //Set cam location
-        Vector3f c = new Vector3f(0.0f, 30.0f, 55.0f);
+        Vector3f c = new Vector3f(0.0f, 28.0f, 75.0f);
         cam.setLocation(c);
-        cam.setRotation(new Quaternion(0.0f, 1.0f, -0.1f, 0));
+        cam.setRotation(new Quaternion(0.0f, 1.0f, 0.0f, 0));
     }
 
     @Override
