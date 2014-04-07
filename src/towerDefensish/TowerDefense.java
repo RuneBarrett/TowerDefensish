@@ -67,6 +67,7 @@ public class TowerDefense extends SimpleApplication implements AnimEventListener
     private BitmapText budgetIncremented;
     private BitmapText playerMana;
     private BitmapText infoMessage;
+    private BitmapText cooldownText;
     private float chargeTimer;
     private float infoTimer;
     private boolean shiftHeld;
@@ -203,8 +204,8 @@ public class TowerDefense extends SimpleApplication implements AnimEventListener
         infoMessage = new BitmapText(guiFont);
         infoMessage.setSize(guiFont.getCharSet().getRenderedSize());
         infoMessage.move(
-                settings.getWidth() / 2, // X
-                settings.getHeight() / 3 + infoMessage.getLineHeight() * 3.3f, // Y
+                settings.getWidth() / 2 - 120, // X
+                settings.getHeight() / 5, // Y
                 0); // Z (depth layer)
         guiNode.attachChild(infoMessage);
 
@@ -274,6 +275,14 @@ public class TowerDefense extends SimpleApplication implements AnimEventListener
                 0); // Z (depth layer)
         guiNode.attachChild(towerBullets);
 
+        //Colldown
+        cooldownText = new BitmapText(guiFont);
+        cooldownText.setSize(guiFont.getCharSet().getRenderedSize());
+        cooldownText.move(settings.getWidth()-200, // X
+                settings.getHeight()-cooldownText.getHeight(), // Y
+                0); // Z (depth layer)
+        guiNode.attachChild(cooldownText);
+
 //        Picture frame = new Picture("User interface frame");
 //        frame.setImage(assetManager, "Interface/Pics/sword.png", false);
 //        frame.move(settings.getWidth(), settings.getHeight() - 200, -2);
@@ -292,14 +301,12 @@ public class TowerDefense extends SimpleApplication implements AnimEventListener
         playerMana.setText("     Mana:    " + state.getMana());
         chargeTimer += tpf;
         if (state.getChargeAdded()) {
-            //chargeTimer = 0;
             budgetIncremented.setText("     Charge added! Keep killing!");
             state.setChargeAdded(false);
         }
         if (chargeTimer > 5) {
             chargeTimer = 0;
             budgetIncremented.setText("     Kill more.. Now..");
-
         }
 
         CollisionResults results = clickRayCollission();
@@ -319,14 +326,17 @@ public class TowerDefense extends SimpleApplication implements AnimEventListener
         }
         infoTimer += tpf;
         if (state.isNewInfo()) {
-            chargeTimer = 0;
+            infoTimer = 0;
             infoMessage.setText(state.getInfoMessage());
             state.setIsNewInfo(false);
         }
-        System.out.println(infoTimer);
         if (infoTimer > 5) {
-            budgetIncremented.setText("");
-
+            infoMessage.setText("");
+        }
+        if(state.getCooldown()>0){
+            cooldownText.setText("Cooldown: " + state.getCooldown());
+        }else{
+            cooldownText.setText("");
         }
 
     }
@@ -421,7 +431,7 @@ public class TowerDefense extends SimpleApplication implements AnimEventListener
         Texture up = assetManager.loadTexture("Textures/Sky/Lagoon/lagoon_up.jpg");
         Texture down = assetManager.loadTexture("Textures/Sky/Lagoon/lagoon_down.jpg");
         Spatial sky = SkyFactory.createSky(assetManager, west, east, north, south, up, down);
-        sky.rotate(0, FastMath.DEG_TO_RAD*100, 0);
+        sky.rotate(0, FastMath.DEG_TO_RAD * 100, 0);
         rootNode.attachChild(sky);
     }
 }

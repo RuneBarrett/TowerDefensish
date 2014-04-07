@@ -146,7 +146,7 @@ public class CreepControl extends AbstractControl implements PhysicsTickListener
         return (Integer) spatial.getUserData("damage");
     }
 
-    void setHealth(int newHealth) {
+    public void setHealth(int newHealth) {
         spatial.setUserData("health", newHealth);
     }
 

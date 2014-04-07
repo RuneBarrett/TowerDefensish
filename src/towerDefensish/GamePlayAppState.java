@@ -65,11 +65,12 @@ public class GamePlayAppState extends AbstractAppState {
     private int score = 0;
     private int health = 20;
     private int budget = 5;
-    private float mana = 100;
+    private float mana;
+    private float maxMana = 50;
     private int creepsKilled = 0;
     private float budgetTimer = 0;
     private float beamTimer = 0;
-    private int numOfCreeps = 15;
+    private int numOfCreeps = 5;
     private int creepHealth = 12;
     private boolean lastGameWon = false;
     private int bNum = 0;
@@ -106,6 +107,7 @@ public class GamePlayAppState extends AbstractAppState {
 
         //stoneMat = assetManager.loadMaterial("Textures/Turret/turret.png");
         spellMesh = new Sphere(32, 32, 2.50f, true, false);
+        mana = maxMana;
 
         lightsAndCam();
         createNodes();
@@ -134,23 +136,21 @@ public class GamePlayAppState extends AbstractAppState {
         if (budgetTimer >= 15.0f) {
             budgetTimer = 0.0f;
             budget++;
-            System.out.println("Charge added. Budget: " + budget);
         }
         beamTimer += tpf;
         if (beamTimer >= 0.3f) {
             beamNode.detachAllChildren();
             beamTimer = 0;
         }
-        if (mana < 100) {
-            mana += tpf * 2;
+        if (mana < maxMana) {
+            mana += tpf;
         }
-        cooldown += tpf;
+        cooldown -= tpf;
     }
 
     public void shoot() {
-        if (cooldown > 5) {
-            cooldown = 0;
-            System.out.println(mana);
+        if (cooldown < 0) {
+            cooldown = 8;
             Geometry ballGeo = new Geometry("NormalSpell", spellMesh);
             Material mat = new Material(assetManager, "Common/MatDefs/Light/Lighting.j3md");
             ballGeo.setMaterial(mat);
@@ -160,28 +160,26 @@ public class GamePlayAppState extends AbstractAppState {
             mat.setTexture("DiffuseMap", assetManager.loadTexture(wood));
 
             if (fireballOn) {
-                if (mana > 10) {
+                if (mana > 18) {
                     ballGeo.setName("Fireball");
                     TextureKey fire = new TextureKey("Interface/Pics/flames.png", false);
                     mat.setTexture("DiffuseMap", assetManager.loadTexture(fire));
                     ballGeo.addControl(new FireBallControl(this, assetManager, ballNode, ballGeo, bulletAppState));
-                    mana = mana - 10;
+                    mana = mana - 18;
                 } else {
                     infoMessage = "Mana too low to cast a Fireball!";
                     isNewInfo = true;
-                    System.out.println("Mana too low to cast a Fireball!");
                 }
             } else if (frostBoltOn) {
-                if (mana > 15) {
+                if (mana > 12) {
                     ballGeo.setName("Frostbolt");
                     TextureKey ice = new TextureKey("Interface/Pics/chrislinder_ice_6.png", false);
                     mat.setTexture("DiffuseMap", assetManager.loadTexture(ice));
                     ballGeo.addControl(new FrostboltControl(this, assetManager, ballNode, ballGeo, bulletAppState));
-                    mana = mana - 15;
+                    mana = mana - 12;
                 } else {
                     infoMessage = "Mana too low to cast a Frostbolt!";
                     isNewInfo = true;
-                    System.out.println("Mana too low to cast a Frostbolt!");
                 }
             } else if (frostNovaOn) {
                 TextureKey ice = new TextureKey("Interface/Pics/ice-block.png", false);
@@ -334,7 +332,6 @@ public class GamePlayAppState extends AbstractAppState {
         Line beam = new Line(tp, cp);
         beam.setLineWidth(3);
         Geometry beamGeom = new Geometry("Beam" + bNum, beam);
-        System.out.println("beam from tower" + num);
 
         Material mat = new Material(assetManager, "Common/MatDefs/Light/Lighting.j3md");
         TextureKey laser = new TextureKey("Interface/Pics/laser.png", false);
@@ -483,5 +480,9 @@ public class GamePlayAppState extends AbstractAppState {
 
     public void setIsNewInfo(boolean bool) {
         isNewInfo = bool;
+    }
+    
+    public float getCooldown(){
+        return cooldown;
     }
 }

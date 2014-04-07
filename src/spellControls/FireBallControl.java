@@ -10,6 +10,7 @@ import com.jme3.bullet.PhysicsSpace;
 import com.jme3.bullet.PhysicsTickListener;
 import com.jme3.bullet.collision.PhysicsCollisionEvent;
 import com.jme3.bullet.collision.PhysicsCollisionListener;
+import com.jme3.bullet.control.BetterCharacterControl;
 import com.jme3.bullet.control.RigidBodyControl;
 import com.jme3.effect.ParticleEmitter;
 import com.jme3.effect.ParticleMesh;
@@ -20,7 +21,10 @@ import com.jme3.renderer.RenderManager;
 import com.jme3.renderer.ViewPort;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
+import com.jme3.scene.Spatial;
 import com.jme3.scene.control.AbstractControl;
+import java.util.ArrayList;
+import towerDefensish.CreepControl;
 import towerDefensish.GamePlayAppState;
 
 /**
@@ -37,7 +41,11 @@ public class FireBallControl extends AbstractControl implements PhysicsCollision
     private ParticleEmitter fireEmitter;
     private final GamePlayAppState GPAState;
     private boolean alreadyExploded = false;
-
+    private ArrayList<Spatial> influencedCreeps;
+    private Vector3f explosionPos;
+    private int damage = 4;
+    private boolean alreadyDamaged = false;
+    private float damageTimer = 5;
 
     public FireBallControl(GamePlayAppState GPAState, AssetManager assetManager, Node ballNode, Geometry ballGeom, BulletAppState BAState) {
         this.assetManager = assetManager;
@@ -45,6 +53,7 @@ public class FireBallControl extends AbstractControl implements PhysicsCollision
         this.ballGeom = ballGeom;
         this.BAState = BAState;
         this.GPAState = GPAState;
+        influencedCreeps = new ArrayList<Spatial>();
 
         initFireEffect();
     }
@@ -58,15 +67,38 @@ public class FireBallControl extends AbstractControl implements PhysicsCollision
             alreadyExploded = true;
         }
         explode = false;
+        damageTimer+=tpf;
+        System.out.println(damageTimer);
+        if (!influencedCreeps.isEmpty()) {
+            System.out.println(influencedCreeps.size());
+            for (Spatial influencedCreep : influencedCreeps) {
+                //influencedCreep.setJumpForce(new Vector3f(0, 10, 0));
+                if (damageTimer>5f) {
+                    influencedCreep.getControl(CreepControl.class).setHealth(influencedCreep.getControl(CreepControl.class).getHealth() - getDamage());
+                    //alreadyDamaged = true;
+                    damageTimer = 0f;
+                }
+                if (influencedCreep.getWorldTranslation().y - 5 < explosionPos.y) {
+                    System.out.println("back");
+                    influencedCreep.getControl(BetterCharacterControl.class).setWalkDirection(explosionPos.negate().negate());
+                } else if (influencedCreep.getWorldTranslation().y > explosionPos.y) {
+                    System.out.println("forward");
+                    influencedCreep.getControl(BetterCharacterControl.class).setWalkDirection(explosionPos.negate());
+
+                }
+                influencedCreep.getControl(BetterCharacterControl.class).jump();
+            }
+
+        }
     }
 
     private void initFireEffect() {
         BAState.getPhysicsSpace().addCollisionListener(this);
         fireEmitter = new ParticleEmitter("FireballTail", ParticleMesh.Type.Triangle, 30);
-        Material fireMat = new Material(assetManager,"Common/MatDefs/Misc/Particle.j3md");
-        fireMat.setTexture("Texture",assetManager.loadTexture("Effects/flame.png"));
+        Material fireMat = new Material(assetManager, "Common/MatDefs/Misc/Particle.j3md");
+        fireMat.setTexture("Texture", assetManager.loadTexture("Effects/flame.png"));
         fireEmitter.setMaterial(fireMat);
-        
+
         fireEmitter.setImagesX(2);
         fireEmitter.setImagesY(2);
         fireEmitter.setRandomAngle(true);
@@ -84,9 +116,24 @@ public class FireBallControl extends AbstractControl implements PhysicsCollision
     }
 
     public void collision(PhysicsCollisionEvent event) {
+        influencedCreeps.clear();
         if (event.getNodeA().getName().equals("Fireball") || event.getNodeB().getName().equals("Fireball")) {
             explode = true;
+            for (Spatial creep : GPAState.getCreeps()) {
+                if (event.getPositionWorldOnA().distance(creep.getLocalTranslation()) < 40f) {
+                    influencedCreeps.add(creep);
+                    explosionPos = event.getPositionWorldOnA();
+                }
+                //event.getLocalPointA().distance(creep.getLocalTranslation());
+
+
+            }
+
         }
+    }
+
+    public int getDamage() {
+        return damage;
     }
 
     public void prePhysicsTick(PhysicsSpace space, float tpf) {
