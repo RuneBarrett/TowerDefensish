@@ -87,6 +87,7 @@ public class GamePlayAppState extends AbstractAppState {
     private RigidBodyControl basePhy;
     private float baseShapeScale;
     private boolean isNewInfo;
+    private float cooldown;
 
     @Override
     public void initialize(AppStateManager stateManager, Application app) {
@@ -142,9 +143,11 @@ public class GamePlayAppState extends AbstractAppState {
         if (mana < 100) {
             mana += tpf * 2;
         }
+        cooldown+=tpf;
     }
 
     public void shoot() {
+        if(cooldown>5){
         System.out.println(mana);
         Geometry ballGeo = new Geometry("Spell", spellMesh);
         Material mat = new Material(assetManager, "Common/MatDefs/Light/Lighting.j3md");
@@ -155,7 +158,8 @@ public class GamePlayAppState extends AbstractAppState {
         mat.setTexture("DiffuseMap", assetManager.loadTexture(wood));
 
         if (fireballOn) {
-            if (mana > 20) {
+            if (mana > 20 && cooldown > 5f) {
+                cooldown = 0;
                 ballGeo.setName("Fireball");
                 TextureKey fire = new TextureKey("Interface/Pics/flames.png", false);
                 mat.setTexture("DiffuseMap", assetManager.loadTexture(fire));
@@ -163,13 +167,14 @@ public class GamePlayAppState extends AbstractAppState {
                 mana = mana - 20;
             } else {
                 infoMessage = "Mana too low to cast a Fireball!";
-                isNewInfo=true;
+                isNewInfo = true;
                 System.out.println("Mana too low to cast a Fireball!");
             }
         }
 
         if (frostBoltOn) {
-            if (mana > 15) {
+            if (mana > 15 && cooldown > 5f) {
+                cooldown = 0;
                 ballGeo.setName("Frostbolt");
                 TextureKey ice = new TextureKey("Interface/Pics/chrislinder_ice_6.png", false);
                 mat.setTexture("DiffuseMap", assetManager.loadTexture(ice));
@@ -200,6 +205,10 @@ public class GamePlayAppState extends AbstractAppState {
 
 
         ballPhy.setLinearVelocity(cam.getDirection().mult(65));
+        }else{
+            infoMessage = "Spells are on cooldown.";
+                isNewInfo = true;
+        }
     }
 
     private void createNodes() {
@@ -471,7 +480,8 @@ public class GamePlayAppState extends AbstractAppState {
     public String getInfoMessage() {
         return infoMessage;
     }
-    public void setIsNewInfo(boolean bool){
+
+    public void setIsNewInfo(boolean bool) {
         isNewInfo = bool;
     }
 }
