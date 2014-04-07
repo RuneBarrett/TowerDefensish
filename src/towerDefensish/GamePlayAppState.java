@@ -83,10 +83,10 @@ public class GamePlayAppState extends AbstractAppState {
     private boolean frostNovaOn;
     private boolean bigSpellOn;
     private FireBallControl fireControl;
-    private String manaMessage = "";
+    private String infoMessage = "";
     private RigidBodyControl basePhy;
     private float baseShapeScale;
-    
+    private boolean isNewInfo;
 
     @Override
     public void initialize(AppStateManager stateManager, Application app) {
@@ -140,7 +140,7 @@ public class GamePlayAppState extends AbstractAppState {
             beamTimer = 0;
         }
         if (mana < 100) {
-            mana += tpf * 4;
+            mana += tpf * 2;
         }
     }
 
@@ -155,27 +155,29 @@ public class GamePlayAppState extends AbstractAppState {
         mat.setTexture("DiffuseMap", assetManager.loadTexture(wood));
 
         if (fireballOn) {
-            if (mana > 15) {
+            if (mana > 20) {
                 ballGeo.setName("Fireball");
                 TextureKey fire = new TextureKey("Interface/Pics/flames.png", false);
                 mat.setTexture("DiffuseMap", assetManager.loadTexture(fire));
-                ballGeo.addControl(new FireBallControl(this, assetManager, ballNode, ballGeo,  bulletAppState));
-                mana = mana - 15;
+                ballGeo.addControl(new FireBallControl(this, assetManager, ballNode, ballGeo, bulletAppState));
+                mana = mana - 20;
             } else {
-                manaMessage = "Mana too low to cast a Fireball!";
+                infoMessage = "Mana too low to cast a Fireball!";
+                isNewInfo=true;
                 System.out.println("Mana too low to cast a Fireball!");
             }
         }
 
         if (frostBoltOn) {
-            if (mana > 10) {
+            if (mana > 15) {
                 ballGeo.setName("Frostbolt");
                 TextureKey ice = new TextureKey("Interface/Pics/chrislinder_ice_6.png", false);
                 mat.setTexture("DiffuseMap", assetManager.loadTexture(ice));
-                ballGeo.addControl(new FrostboltControl(this, assetManager, ballNode, ballGeo,  bulletAppState));
-                mana = mana - 10;
+                ballGeo.addControl(new FrostboltControl(this, assetManager, ballNode, ballGeo, bulletAppState));
+                mana = mana - 15;
             } else {
-                manaMessage = "Mana too low to cast a Frostbolt!";
+                infoMessage = "Mana too low to cast a Frostbolt!";
+                isNewInfo = true;
                 System.out.println("Mana too low to cast a Frostbolt!");
             }
         }
@@ -194,8 +196,8 @@ public class GamePlayAppState extends AbstractAppState {
         bulletAppState.getPhysicsSpace().add(ballPhy);
         ballPhy.setCcdSweptSphereRadius(.1f);
         ballPhy.setCcdMotionThreshold(0.001f);
-        ballPhy.setAngularVelocity(new Vector3f(-FastMath.nextRandomFloat()*25, FastMath.nextRandomFloat()*5-5, FastMath.nextRandomFloat()*5-5));
-        
+        ballPhy.setAngularVelocity(new Vector3f(-FastMath.nextRandomFloat() * 25, FastMath.nextRandomFloat() * 5 - 5, FastMath.nextRandomFloat() * 5 - 5));
+
 
         ballPhy.setLinearVelocity(cam.getDirection().mult(65));
     }
@@ -235,7 +237,7 @@ public class GamePlayAppState extends AbstractAppState {
         base.addControl(new PlayerControl(this, playerNode, assetManager));
         base.setName("player");
         playerNode.attachChild(base);
-        
+
         basePhy = new RigidBodyControl(0f);
         base.addControl(basePhy);
         bulletAppState.getPhysicsSpace().add(basePhy);
@@ -284,7 +286,7 @@ public class GamePlayAppState extends AbstractAppState {
         for (int i = 0; i < num; i++) {
 
             v = new Vector3f(FastMath.nextRandomFloat() * creepX - creepX / 2,//X
-                    FastMath.nextRandomFloat()*15.0f+5,//Y
+                    FastMath.nextRandomFloat() * 15.0f + 5,//Y
                     FastMath.nextRandomFloat() * creepZ - (creepZ + 40));//Z
 
             Node creep = (Node) assetManager.loadModel("Textures/Creeps/FlySnakeCar/FlySnakeCar.mesh.xml");
@@ -449,10 +451,27 @@ public class GamePlayAppState extends AbstractAppState {
     public void setBigSpell(boolean bigSpellBool) {
         bigSpellOn = bigSpellBool;
     }
-    public Node getExplosionNode(){
+
+    public Node getExplosionNode() {
         return explosionNode;
     }
-    public int getCreepHealth(){
+
+    public int getCreepHealth() {
         return creepHealth;
+    }
+
+    public float getMana() {
+        return mana;
+    }
+
+    boolean isNewInfo() {
+        return isNewInfo;
+    }
+
+    public String getInfoMessage() {
+        return infoMessage;
+    }
+    public void setIsNewInfo(boolean bool){
+        isNewInfo = bool;
     }
 }

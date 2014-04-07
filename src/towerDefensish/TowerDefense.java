@@ -63,7 +63,10 @@ public class TowerDefense extends SimpleApplication implements AnimEventListener
     private BitmapText towerBullets;
     private BitmapText playerCreepCount;
     private BitmapText budgetIncremented;
+    private BitmapText playerMana;
+    private BitmapText infoMessage;
     private float chargeTimer;
+    private float infoTimer;
     private boolean shiftHeld;
 
     public static void main(String[] args) {
@@ -80,7 +83,7 @@ public class TowerDefense extends SimpleApplication implements AnimEventListener
 
     @Override
     public void simpleInitApp() {
-        
+
         state = new GamePlayAppState();
         stateManager.attach(state);
         disableWASDandAddMappingsAndListeners();
@@ -218,6 +221,15 @@ public class TowerDefense extends SimpleApplication implements AnimEventListener
                 0); // Z (depth layer)
         guiNode.attachChild(towerName);
 
+        //Info message
+        infoMessage = new BitmapText(guiFont);
+        infoMessage.setSize(guiFont.getCharSet().getRenderedSize());
+        infoMessage.move(
+                settings.getWidth() / 2, // X
+                settings.getHeight() / 3 + infoMessage.getLineHeight() * 3.3f, // Y
+                0); // Z (depth layer)
+        guiNode.attachChild(infoMessage);
+
 //------------------------------------------------------------------------------
         //Player health
         guiFont = assetManager.loadFont("Interface/Fonts/Cracked28.fnt");
@@ -252,6 +264,14 @@ public class TowerDefense extends SimpleApplication implements AnimEventListener
                 0); // Z (depth layer)
         guiNode.attachChild(playerCreepCount);
 
+        //Player Mana
+        playerMana = new BitmapText(guiFont);
+        playerMana.setSize(guiFont.getCharSet().getRenderedSize());
+        playerMana.move(1, // X
+                settings.getHeight() - playerMana.getHeight() * 5 - 10, // Y
+                0); // Z (depth layer)
+        guiNode.attachChild(playerMana);
+
         //towerHealth
         towerHealth = new BitmapText(guiFont);
         towerHealth.setSize(guiFont.getCharSet().getRenderedSize());
@@ -268,7 +288,7 @@ public class TowerDefense extends SimpleApplication implements AnimEventListener
                 0); // Z (depth layer)
         guiNode.attachChild(towerCharges);
 
-        //towerCharges
+        //towerBullets
         towerBullets = new BitmapText(guiFont);
         towerBullets.setSize(guiFont.getCharSet().getRenderedSize());
         towerBullets.move(1, // X
@@ -276,13 +296,13 @@ public class TowerDefense extends SimpleApplication implements AnimEventListener
                 0); // Z (depth layer)
         guiNode.attachChild(towerBullets);
 
-        Picture frame = new Picture("User interface frame");
-        frame.setImage(assetManager, "Interface/Pics/sword.png", false);
-        frame.move(settings.getWidth(), settings.getHeight() - 200, -2);
-        frame.rotate(0, 0, FastMath.DEG_TO_RAD * 90);
-        frame.setWidth(150);
-        frame.setHeight(220);
-        guiNode.attachChild(frame);
+//        Picture frame = new Picture("User interface frame");
+//        frame.setImage(assetManager, "Interface/Pics/sword.png", false);
+//        frame.move(settings.getWidth(), settings.getHeight() - 200, -2);
+//        frame.rotate(0, 0, FastMath.DEG_TO_RAD * 90);
+//        frame.setWidth(150);
+//        frame.setHeight(220);
+//        guiNode.attachChild(frame);
     }
 
     private void update2DGui(float tpf) {
@@ -291,6 +311,7 @@ public class TowerDefense extends SimpleApplication implements AnimEventListener
         playerHealth.setText("     Health:         " + state.getHealth());
         playerCharges.setText("     Charges:     " + state.getBudget());
         playerCreepCount.setText("     Creeps Killed:   " + state.getCreepsKilled());
+        playerMana.setText("     Mana:    " + state.getMana());
         chargeTimer += tpf;
         if (state.getChargeAdded()) {
             //chargeTimer = 0;
@@ -317,6 +338,16 @@ public class TowerDefense extends SimpleApplication implements AnimEventListener
             towerCharges.setText("");
             towerHealth.setText("");
             towerBullets.setText("");
+        }
+        infoTimer += tpf;
+        if (state.isNewInfo()) {
+            chargeTimer = 0;
+            infoMessage.setText(state.getInfoMessage());
+            state.setIsNewInfo(false);
+        }
+        if (infoTimer > 5) {
+            budgetIncremented.setText("");
+
         }
 
     }
