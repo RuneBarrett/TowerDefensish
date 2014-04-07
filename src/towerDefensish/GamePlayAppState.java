@@ -160,12 +160,12 @@ public class GamePlayAppState extends AbstractAppState {
             mat.setTexture("DiffuseMap", assetManager.loadTexture(wood));
 
             if (fireballOn) {
-                if (mana > 90) {
+                if (mana > 10) {
                     ballGeo.setName("Fireball");
                     TextureKey fire = new TextureKey("Interface/Pics/flames.png", false);
                     mat.setTexture("DiffuseMap", assetManager.loadTexture(fire));
                     ballGeo.addControl(new FireBallControl(this, assetManager, ballNode, ballGeo, bulletAppState));
-                    mana = mana - 90;
+                    mana = mana - 10;
                 } else {
                     infoMessage = "Mana too low to cast a Fireball!";
                     isNewInfo = true;
@@ -227,8 +227,8 @@ public class GamePlayAppState extends AbstractAppState {
     }
 
     private void createFloor() {
-        Spatial floor = assetManager.loadModel("Scenes/TowerDefenseTerrain.j3o");
-        floor.setLocalTranslation(0, 0, -120f);
+        Spatial floor = assetManager.loadModel("Scenes/TowerDefenseTerrain2.j3o");
+        floor.setLocalTranslation(0, 0, -140f);
         floor.scale(1.4f);
         rootNode.attachChild(floor);
 
@@ -289,8 +289,8 @@ public class GamePlayAppState extends AbstractAppState {
     public void createCreeps(int num) {
 
         Vector3f v;
-        int creepX = 120;
-        int creepZ = 150;
+        int creepX = 160;
+        int creepZ = 180;
         creeps = new ArrayList<Spatial>();
         for (int i = 0; i < num; i++) {
 

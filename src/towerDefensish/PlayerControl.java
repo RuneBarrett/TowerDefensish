@@ -33,6 +33,7 @@ public class PlayerControl extends AbstractControl {
             shockwaveEmitter, debrisEmitter,
             fireEmitter, smokeEmitter, embersEmitter;
     private boolean dead = false;
+    private int size = 2;
 
     public PlayerControl(GamePlayAppState GPAState, Node playerNode, AssetManager assetManager) {
         this.GPAState = GPAState;
@@ -70,8 +71,8 @@ public class PlayerControl extends AbstractControl {
         fireEmitter.setStartColor(new ColorRGBA(1f, 1f, .5f, 1f));
         fireEmitter.setEndColor(new ColorRGBA(1f, 0f, 0f, 0f));
         fireEmitter.setGravity(0, -.5f, 0);
-        fireEmitter.setStartSize(10f);
-        fireEmitter.setEndSize(0.05f);
+        fireEmitter.setStartSize(10f*size);
+        fireEmitter.setEndSize(0.05f*size);
         fireEmitter.setLowLife(.5f);
         fireEmitter.setHighLife(2f);
         fireEmitter.getParticleInfluencer().setVelocityVariation(0.3f);
@@ -92,8 +93,8 @@ public class PlayerControl extends AbstractControl {
 
         burstEmitter.setStartColor(new ColorRGBA(1f, 0.8f, 0.36f, 1f));
         burstEmitter.setEndColor(new ColorRGBA(1f, 0.8f, 0.36f, .25f));
-        burstEmitter.setStartSize(4f);
-        burstEmitter.setEndSize(35.0f);
+        burstEmitter.setStartSize(4f*size);
+        burstEmitter.setEndSize(35.0f*size);
         burstEmitter.setGravity(0, 0, 0);
         burstEmitter.setLowLife(.75f);
         burstEmitter.setHighLife(.75f);
@@ -115,8 +116,8 @@ public class PlayerControl extends AbstractControl {
 
         embersEmitter.setStartColor(new ColorRGBA(1f, 0.29f, 0.34f, 1.0f));
         embersEmitter.setEndColor(new ColorRGBA(0, 0, 0, 0.5f));
-        embersEmitter.setStartSize(12f);
-        embersEmitter.setEndSize(18f);
+        embersEmitter.setStartSize(12f*size);
+        embersEmitter.setEndSize(18f*size);
         embersEmitter.setGravity(0, -.5f, 0);
         embersEmitter.setLowLife(1.8f);
         embersEmitter.setHighLife(5f);
@@ -142,8 +143,8 @@ public class PlayerControl extends AbstractControl {
         sparksEmitter.getParticleInfluencer().setVelocityVariation(1);
         sparksEmitter.setFacingVelocity(true);
         sparksEmitter.setGravity(0, 15, 0);
-        sparksEmitter.setStartSize(5f);
-        sparksEmitter.setEndSize(5f);
+        sparksEmitter.setStartSize(5f*size);
+        sparksEmitter.setEndSize(5f*size);
         sparksEmitter.setLowLife(.9f);
         sparksEmitter.setHighLife(1.1f);
         sparksEmitter.setParticlesPerSec(0);
@@ -168,8 +169,8 @@ public class PlayerControl extends AbstractControl {
         smokeEmitter.setFacingVelocity(true);
         smokeEmitter.getParticleInfluencer().setInitialVelocity(new Vector3f(0, 6f, 0));
         smokeEmitter.getParticleInfluencer().setVelocityVariation(1);
-        smokeEmitter.setStartSize(5f);
-        smokeEmitter.setEndSize(30f);
+        smokeEmitter.setStartSize(5f*size);
+        smokeEmitter.setEndSize(30f*size);
         smokeEmitter.setParticlesPerSec(0);
     }
 
@@ -187,8 +188,8 @@ public class PlayerControl extends AbstractControl {
         debrisEmitter.setRotateSpeed(FastMath.TWO_PI * 2);
         debrisEmitter.setStartColor(new ColorRGBA(0.4f, 0.4f, 0.4f, 1.0f));
         debrisEmitter.setEndColor(new ColorRGBA(0.4f, 0.4f, 0.4f, 1.0f));
-        debrisEmitter.setStartSize(.5f);
-        debrisEmitter.setEndSize(3f);
+        debrisEmitter.setStartSize(.5f*size);
+        debrisEmitter.setEndSize(3f*size);
         debrisEmitter.setGravity(0, 10f, 0);
         debrisEmitter.setLowLife(2.7f);
         debrisEmitter.setHighLife(3.1f);
@@ -213,8 +214,8 @@ public class PlayerControl extends AbstractControl {
         shockwaveEmitter.setFaceNormal(Vector3f.UNIT_Y);
         shockwaveEmitter.setStartColor(new ColorRGBA(.68f, 0.77f, 0.61f, 1f));
         shockwaveEmitter.setEndColor(new ColorRGBA(.68f, 0.77f, 0.61f, 0f));
-        shockwaveEmitter.setStartSize(10f);
-        shockwaveEmitter.setEndSize(50f);
+        shockwaveEmitter.setStartSize(10f*size);
+        shockwaveEmitter.setEndSize(50f*size);
         shockwaveEmitter.setGravity(0, 0, 0);
         shockwaveEmitter.setLowLife(1f);
         shockwaveEmitter.setHighLife(1f);

@@ -261,28 +261,27 @@ public class FireballExplosionControl extends AbstractControl {
             ballNode.detachChild(ballGeo);
             BAState.getPhysicsSpace().remove(ballGeo.getControl(RigidBodyControl.class));
             ballNode.detachChild(ballNode.getChild("FireballTail"));
-
             state++;
         }
-        if (time > 3.5f && state == 3) {
-            // rewind the effect
-
-            burstEmitter.killAllParticles();
-            sparksEmitter.killAllParticles();
-            debrisEmitter.killAllParticles();
-            shockwaveEmitter.killAllParticles();
-            state++;
-        }
-        if (time > 4.5f && state == 4) {
-            // rewind the effect
-            smokeEmitter.killAllParticles();
-            embersEmitter.killAllParticles();
-            fireEmitter.killAllParticles();
-            state++;
-        }
-        if (time > 5f && state == 5) {
-            alreadyExploded = true;            
-        }
+//        if (time > 3.5f && state == 3) {
+//            // rewind the effect
+//
+//            burstEmitter.killAllParticles();
+//            sparksEmitter.killAllParticles();
+//            debrisEmitter.killAllParticles();
+//            shockwaveEmitter.killAllParticles();
+//            state++;
+//        }
+//        if (time > 4.5f && state == 4) {
+//            // rewind the effect
+//            smokeEmitter.killAllParticles();
+//            embersEmitter.killAllParticles();
+//            fireEmitter.killAllParticles();
+//            state++;
+//        }
+//        if (time > 5f && state == 5) {
+//            alreadyExploded = true;            
+//        }
     }
 
     @Override
