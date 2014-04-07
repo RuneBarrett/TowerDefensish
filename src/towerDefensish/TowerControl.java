@@ -11,7 +11,6 @@ import com.jme3.renderer.ViewPort;
 import com.jme3.scene.Spatial;
 import com.jme3.scene.control.AbstractControl;
 import java.util.ArrayList;
-import towerDefensish.GamePlayAppState;
 
 /**
  *
@@ -105,7 +104,7 @@ public class TowerControl extends AbstractControl {
     }
 
     public void addCharge() {
-        charges.add(new Charges(1, 10));
+        charges.add(new Charges(1, 8));
     }
 
     public int getIndex() {

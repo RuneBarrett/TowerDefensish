@@ -70,7 +70,7 @@ public class GamePlayAppState extends AbstractAppState {
     private int creepsKilled = 0;
     private float budgetTimer = 0;
     private float beamTimer = 0;
-    private int numOfCreeps = 5;
+    private int numOfCreeps = 15;
     private int creepHealth = 12;
     private boolean lastGameWon = false;
     private int bNum = 0;
@@ -288,13 +288,13 @@ public class GamePlayAppState extends AbstractAppState {
 
         Vector3f v;
         int creepX = 160;
-        int creepZ = 180;
+        int creepZ = 200;
         creeps = new ArrayList<Spatial>();
         for (int i = 0; i < num; i++) {
 
             v = new Vector3f(FastMath.nextRandomFloat() * creepX - creepX / 2,//X
-                    FastMath.nextRandomFloat() * 15.0f + 5,//Y
-                    FastMath.nextRandomFloat() * creepZ - (creepZ + 40));//Z
+                    FastMath.nextRandomFloat() * 200.0f + 5,//Y
+                    FastMath.nextRandomFloat() * creepZ - (creepZ + 50));//Z
 
             Node creep = (Node) assetManager.loadModel("Textures/Creeps/FlySnakeCar/FlySnakeCar.mesh.xml");
 
@@ -315,7 +315,7 @@ public class GamePlayAppState extends AbstractAppState {
             creep.setUserData("index", i);
             creep.setUserData("health", creepHealth);
             creep.setUserData("damage", 1);
-            creep.addControl(new CreepControl(this, bulletAppState));
+            creep.addControl(new CreepControl(this, bulletAppState, assetManager, creepNode));
 
             creepPhy = new BetterCharacterControl(2.5f, 0.1f, 2f);
             creep.addControl(creepPhy);

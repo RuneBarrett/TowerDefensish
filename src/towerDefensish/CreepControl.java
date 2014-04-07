@@ -4,15 +4,21 @@
  */
 package towerDefensish;
 
+import com.jme3.asset.AssetManager;
 import com.jme3.bullet.BulletAppState;
 import com.jme3.bullet.PhysicsSpace;
 import com.jme3.bullet.PhysicsTickListener;
 import com.jme3.bullet.collision.PhysicsCollisionEvent;
 import com.jme3.bullet.collision.PhysicsCollisionListener;
 import com.jme3.bullet.control.BetterCharacterControl;
+import com.jme3.effect.ParticleEmitter;
+import com.jme3.effect.ParticleMesh;
+import com.jme3.material.Material;
+import com.jme3.math.ColorRGBA;
 import com.jme3.math.Vector3f;
 import com.jme3.renderer.RenderManager;
 import com.jme3.renderer.ViewPort;
+import com.jme3.scene.Node;
 import com.jme3.scene.Spatial;
 import com.jme3.scene.control.AbstractControl;
 import java.util.ArrayList;
@@ -39,20 +45,29 @@ public class CreepControl extends AbstractControl implements PhysicsTickListener
     private boolean baseInRange = false;
     private ArrayList<Spatial> reaching;
     private int maxHealth;
+    private ParticleEmitter fireEmitter;
+    private final AssetManager assetManager;
+    private Node creepNode;
+    private float fireSize = 1;
+    private int temp;
 
-    public CreepControl(GamePlayAppState GPAState, BulletAppState BAState) {
+    public CreepControl(GamePlayAppState GPAState, BulletAppState BAState, AssetManager assetManager, Node creepNode) {
         this.GPAState = GPAState;
         this.BAState = BAState;
+        this.assetManager = assetManager;
+        this.creepNode = creepNode;
         reachable = new ArrayList<TowerControl>();
         reaching = new ArrayList<Spatial>();
         BAState.getPhysicsSpace().addCollisionListener(this);
         maxHealth = this.GPAState.getCreepHealth();
+        initFireEffect();
     }
 
     @Override
     protected void controlUpdate(float tpf) {
         towers = GPAState.getTowers();
         creepPos = spatial.getLocalTranslation();
+        fireEmitter.setLocalTranslation(creepPos);
 
         //Check if tower in range, and move towards it
         moveTowardsTower = false;
@@ -99,7 +114,10 @@ public class CreepControl extends AbstractControl implements PhysicsTickListener
         reachable.clear();
 
 
+        fireSize = maxHealth - getHealth();
 
+        fireEmitter.setStartSize(0.4f * fireSize);
+        fireEmitter.setEndSize(0.1f * fireSize);
 
     }
 
@@ -132,6 +150,30 @@ public class CreepControl extends AbstractControl implements PhysicsTickListener
 
             }
         }
+    }
+
+    private void initFireEffect() {
+        //BAState.getPhysicsSpace().addCollisionListener(this);
+        fireEmitter = new ParticleEmitter("FireballTail", ParticleMesh.Type.Triangle, 30);
+        Material fireMat = new Material(assetManager, "Common/MatDefs/Misc/Particle.j3md");
+        fireMat.setTexture("Texture", assetManager.loadTexture("Effects/flame.png"));
+        fireEmitter.setMaterial(fireMat);
+
+        fireEmitter.setImagesX(2);
+        fireEmitter.setImagesY(2);
+        fireEmitter.setRandomAngle(true);
+        fireEmitter.setSelectRandomImage(true);
+        fireEmitter.setStartColor(new ColorRGBA(1f, 1f, .5f, 1f));
+        fireEmitter.setEndColor(new ColorRGBA(1f, 0f, 0f, 0f));
+        fireEmitter.setGravity(0, 0, 0);
+        fireEmitter.setStartSize(0.4f * fireSize);
+        fireEmitter.setEndSize(0.1f * fireSize);
+        fireEmitter.setLowLife(0.5f);
+        fireEmitter.setHighLife(2f);
+        fireEmitter.getParticleInfluencer().setVelocityVariation(0.2f);
+        fireEmitter.getParticleInfluencer().setInitialVelocity(new Vector3f(0, 10f, 0));
+
+        creepNode.attachChild(fireEmitter);
     }
 
     public int getIndex() {

@@ -139,7 +139,6 @@ public class TowerDefense extends SimpleApplication implements AnimEventListener
                 int budget = stateManager.getState(GamePlayAppState.class).getBudget();
                 if (budget > 0) {
                     state.setBudget(budget - 1);
-                    System.out.println("Player charges left: " + stateManager.getState(GamePlayAppState.class).getBudget());
                     try {
                         rootNode.getChild("Tower " + selected).getControl(TowerControl.class).addCharge();
                     } catch (NullPointerException e) {

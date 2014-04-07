@@ -43,7 +43,7 @@ public class FireBallControl extends AbstractControl implements PhysicsCollision
     private boolean alreadyExploded = false;
     private ArrayList<Spatial> influencedCreeps;
     private Vector3f explosionPos;
-    private int damage = 4;
+    private int damage = 8;
     private boolean alreadyDamaged = false;
     private float damageTimer = 5;
 
@@ -67,26 +67,29 @@ public class FireBallControl extends AbstractControl implements PhysicsCollision
             alreadyExploded = true;
         }
         explode = false;
-        damageTimer+=tpf;
-        System.out.println(damageTimer);
+        damageTimer += tpf;
+        //System.out.println(damageTimer);
         if (!influencedCreeps.isEmpty()) {
-            System.out.println(influencedCreeps.size());
-            for (Spatial influencedCreep : influencedCreeps) {
-                //influencedCreep.setJumpForce(new Vector3f(0, 10, 0));
-                if (damageTimer>5f) {
+            //System.out.println(influencedCreeps.size());
+            if (damageTimer > 2f) {
+                for (Spatial influencedCreep : influencedCreeps) {
                     influencedCreep.getControl(CreepControl.class).setHealth(influencedCreep.getControl(CreepControl.class).getHealth() - getDamage());
+                    System.out.println("Fireball at " + influencedCreep.getName() + " - Health: " + influencedCreep.getControl(CreepControl.class).getHealth());
+                    //System.out.println(influencedCreep.getControl(CreepControl.class).getHealth());
+
                     //alreadyDamaged = true;
                     damageTimer = 0f;
-                }
-                if (influencedCreep.getWorldTranslation().y - 5 < explosionPos.y) {
-                    System.out.println("back");
-                    influencedCreep.getControl(BetterCharacterControl.class).setWalkDirection(explosionPos.negate().negate());
-                } else if (influencedCreep.getWorldTranslation().y > explosionPos.y) {
-                    System.out.println("forward");
-                    influencedCreep.getControl(BetterCharacterControl.class).setWalkDirection(explosionPos.negate());
 
+                    if (influencedCreep.getWorldTranslation().y - 5 < explosionPos.y) {
+                        //System.out.println("back");
+                        influencedCreep.getControl(BetterCharacterControl.class).setWalkDirection(explosionPos.negate().negate());
+                    } else if (influencedCreep.getWorldTranslation().y > explosionPos.y) {
+                        //System.out.println("forward");
+                        influencedCreep.getControl(BetterCharacterControl.class).setWalkDirection(explosionPos.negate());
+
+                    }
+                    influencedCreep.getControl(BetterCharacterControl.class).jump();
                 }
-                influencedCreep.getControl(BetterCharacterControl.class).jump();
             }
 
         }
@@ -120,7 +123,7 @@ public class FireBallControl extends AbstractControl implements PhysicsCollision
         if (event.getNodeA().getName().equals("Fireball") || event.getNodeB().getName().equals("Fireball")) {
             explode = true;
             for (Spatial creep : GPAState.getCreeps()) {
-                if (event.getPositionWorldOnA().distance(creep.getLocalTranslation()) < 40f) {
+                if (event.getPositionWorldOnA().distance(creep.getLocalTranslation()) < 20f) {
                     influencedCreeps.add(creep);
                     explosionPos = event.getPositionWorldOnA();
                 }
