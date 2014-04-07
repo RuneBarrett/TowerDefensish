@@ -143,71 +143,70 @@ public class GamePlayAppState extends AbstractAppState {
         if (mana < 100) {
             mana += tpf * 2;
         }
-        cooldown+=tpf;
+        cooldown += tpf;
     }
 
     public void shoot() {
-        if(cooldown>5){
-        System.out.println(mana);
-        Geometry ballGeo = new Geometry("Spell", spellMesh);
-        Material mat = new Material(assetManager, "Common/MatDefs/Light/Lighting.j3md");
-        ballGeo.setMaterial(mat);
-        ballGeo.setLocalTranslation(cam.getLocation());
+        if (cooldown > 5) {
+            cooldown = 0;
+            System.out.println(mana);
+            Geometry ballGeo = new Geometry("Spell", spellMesh);
+            Material mat = new Material(assetManager, "Common/MatDefs/Light/Lighting.j3md");
+            ballGeo.setMaterial(mat);
+            ballGeo.setLocalTranslation(cam.getLocation());
 
-        TextureKey wood = new TextureKey("Interface/Pics/wood.png", false);
-        mat.setTexture("DiffuseMap", assetManager.loadTexture(wood));
+            TextureKey wood = new TextureKey("Interface/Pics/wood.png", false);
+            mat.setTexture("DiffuseMap", assetManager.loadTexture(wood));
 
-        if (fireballOn) {
-            if (mana > 20 && cooldown > 5f) {
-                cooldown = 0;
-                ballGeo.setName("Fireball");
-                TextureKey fire = new TextureKey("Interface/Pics/flames.png", false);
-                mat.setTexture("DiffuseMap", assetManager.loadTexture(fire));
-                ballGeo.addControl(new FireBallControl(this, assetManager, ballNode, ballGeo, bulletAppState));
-                mana = mana - 20;
-            } else {
-                infoMessage = "Mana too low to cast a Fireball!";
-                isNewInfo = true;
-                System.out.println("Mana too low to cast a Fireball!");
+            if (fireballOn) {
+                if (mana > 90) {
+                    ballGeo.setName("Fireball");
+                    TextureKey fire = new TextureKey("Interface/Pics/flames.png", false);
+                    mat.setTexture("DiffuseMap", assetManager.loadTexture(fire));
+                    ballGeo.addControl(new FireBallControl(this, assetManager, ballNode, ballGeo, bulletAppState));
+                    mana = mana - 90;
+                } else {
+                    infoMessage = "Mana too low to cast a Fireball!";
+                    isNewInfo = true;
+                    System.out.println("Mana too low to cast a Fireball!");
+                }
             }
-        }
 
-        if (frostBoltOn) {
-            if (mana > 15 && cooldown > 5f) {
-                cooldown = 0;
-                ballGeo.setName("Frostbolt");
-                TextureKey ice = new TextureKey("Interface/Pics/chrislinder_ice_6.png", false);
+            if (frostBoltOn) {
+                if (mana > 15) {
+                    ballGeo.setName("Frostbolt");
+                    TextureKey ice = new TextureKey("Interface/Pics/chrislinder_ice_6.png", false);
+                    mat.setTexture("DiffuseMap", assetManager.loadTexture(ice));
+                    ballGeo.addControl(new FrostboltControl(this, assetManager, ballNode, ballGeo, bulletAppState));
+                    mana = mana - 15;
+                } else {
+                    infoMessage = "Mana too low to cast a Frostbolt!";
+                    isNewInfo = true;
+                    System.out.println("Mana too low to cast a Frostbolt!");
+                }
+            }
+            if (frostNovaOn) {
+                TextureKey ice = new TextureKey("Interface/Pics/ice-block.png", false);
                 mat.setTexture("DiffuseMap", assetManager.loadTexture(ice));
-                ballGeo.addControl(new FrostboltControl(this, assetManager, ballNode, ballGeo, bulletAppState));
-                mana = mana - 15;
-            } else {
-                infoMessage = "Mana too low to cast a Frostbolt!";
-                isNewInfo = true;
-                System.out.println("Mana too low to cast a Frostbolt!");
+                //ballGeo.addControl(new FrostBoltControl(assetManager, ballNode, ballGeo));
             }
-        }
-        if (frostNovaOn) {
-            TextureKey ice = new TextureKey("Interface/Pics/ice-block.png", false);
-            mat.setTexture("DiffuseMap", assetManager.loadTexture(ice));
-            //ballGeo.addControl(new FrostBoltControl(assetManager, ballNode, ballGeo));
-        }
-        mat.setColor("Specular", ColorRGBA.White.mult(ColorRGBA.Red));
-        mat.setFloat("Shininess", 200f);
-        ballNode.attachChild(ballGeo);
+            mat.setColor("Specular", ColorRGBA.White.mult(ColorRGBA.Red));
+            mat.setFloat("Shininess", 200f);
+            ballNode.attachChild(ballGeo);
 
 
-        ballPhy = new RigidBodyControl(70.5f);
-        ballGeo.addControl(ballPhy);
-        bulletAppState.getPhysicsSpace().add(ballPhy);
-        ballPhy.setCcdSweptSphereRadius(.1f);
-        ballPhy.setCcdMotionThreshold(0.001f);
-        ballPhy.setAngularVelocity(new Vector3f(-FastMath.nextRandomFloat() * 25, FastMath.nextRandomFloat() * 5 - 5, FastMath.nextRandomFloat() * 5 - 5));
+            ballPhy = new RigidBodyControl(70.5f);
+            ballGeo.addControl(ballPhy);
+            bulletAppState.getPhysicsSpace().add(ballPhy);
+            ballPhy.setCcdSweptSphereRadius(.1f);
+            ballPhy.setCcdMotionThreshold(0.001f);
+            ballPhy.setAngularVelocity(new Vector3f(-FastMath.nextRandomFloat() * 25, FastMath.nextRandomFloat() * 5 - 5, FastMath.nextRandomFloat() * 5 - 5));
 
 
-        ballPhy.setLinearVelocity(cam.getDirection().mult(65));
-        }else{
+            ballPhy.setLinearVelocity(cam.getDirection().mult(65));
+        } else {
             infoMessage = "Spells are on cooldown.";
-                isNewInfo = true;
+            isNewInfo = true;
         }
     }
 

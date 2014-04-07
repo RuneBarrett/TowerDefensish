@@ -174,31 +174,7 @@ public class TowerDefense extends SimpleApplication implements AnimEventListener
         }
     };
 
-    private CollisionResults clickRayCollission() {
-        CollisionResults results = new CollisionResults();
-        Vector2f click2d = inputManager.getCursorPosition();
-        Vector3f click3d = cam.getWorldCoordinates(new Vector2f(click2d.getX(), click2d.getY()), 0f);
-        Vector3f dir = cam.getWorldCoordinates(new Vector2f(click2d.getX(), click2d.getY()), 1f).subtractLocal(click3d);
-        Ray ray = new Ray(click3d, dir);
-        rootNode.collideWith(ray, results);
-        return results;
-    }
-
-    private void clearSpellSelection() {
-        state.setFireball(false);
-        state.setFrostBolt(false);
-        state.setFrostNova(false);
-        state.setBigSpell(false);
-    }
-
-    public void onAnimCycleDone(AnimControl control, AnimChannel channel, String animName) {
-    }
-
-    public void onAnimChange(AnimControl control, AnimChannel channel, String animName) {
-        System.out.println("animchange");
-    }
-
-    private void initGui() {
+        private void initGui() {
         //Selection light
         lamp.setColor(ColorRGBA.Cyan);
         lamp.setPosition(new Vector3f(0, 3, 0));
@@ -345,11 +321,36 @@ public class TowerDefense extends SimpleApplication implements AnimEventListener
             infoMessage.setText(state.getInfoMessage());
             state.setIsNewInfo(false);
         }
+        System.out.println(infoTimer);
         if (infoTimer > 5) {
             budgetIncremented.setText("");
 
         }
 
+    }
+    
+    private CollisionResults clickRayCollission() {
+        CollisionResults results = new CollisionResults();
+        Vector2f click2d = inputManager.getCursorPosition();
+        Vector3f click3d = cam.getWorldCoordinates(new Vector2f(click2d.getX(), click2d.getY()), 0f);
+        Vector3f dir = cam.getWorldCoordinates(new Vector2f(click2d.getX(), click2d.getY()), 1f).subtractLocal(click3d);
+        Ray ray = new Ray(click3d, dir);
+        rootNode.collideWith(ray, results);
+        return results;
+    }
+
+    private void clearSpellSelection() {
+        state.setFireball(false);
+        state.setFrostBolt(false);
+        state.setFrostNova(false);
+        state.setBigSpell(false);
+    }
+
+    public void onAnimCycleDone(AnimControl control, AnimChannel channel, String animName) {
+    }
+
+    public void onAnimChange(AnimControl control, AnimChannel channel, String animName) {
+        System.out.println("animchange");
     }
 
     private void addMappingsAndListeners() {
