@@ -68,30 +68,22 @@ public class FireBallControl extends AbstractControl implements PhysicsCollision
         }
         explode = false;
         damageTimer += tpf;
-        //System.out.println(damageTimer);
-        if (!influencedCreeps.isEmpty()) {
-            //System.out.println(influencedCreeps.size());
-            if (damageTimer > 2f) {
-                for (Spatial influencedCreep : influencedCreeps) {
-                    influencedCreep.getControl(CreepControl.class).setHealth(influencedCreep.getControl(CreepControl.class).getHealth() - getDamage());
-                    System.out.println("Fireball at " + influencedCreep.getName() + " - Health: " + influencedCreep.getControl(CreepControl.class).getHealth());
-                    //System.out.println(influencedCreep.getControl(CreepControl.class).getHealth());
+        if (!influencedCreeps.isEmpty() && damageTimer > 2) {
+            damageTimer = 0f;
+            for (Spatial influencedCreep : influencedCreeps) {
+                influencedCreep.getControl(CreepControl.class).setHealth(influencedCreep.getControl(CreepControl.class).getHealth() - getDamage());
+                System.out.println("Fireball at " + influencedCreep.getName() + " - Health: " + influencedCreep.getControl(CreepControl.class).getHealth());
 
-                    //alreadyDamaged = true;
-                    damageTimer = 0f;
+                if (influencedCreep.getWorldTranslation().y - 5 < explosionPos.y) {
+                    //Move away from base
+                    influencedCreep.getControl(BetterCharacterControl.class).setWalkDirection(explosionPos.negate().negate());
 
-                    if (influencedCreep.getWorldTranslation().y - 5 < explosionPos.y) {
-                        //System.out.println("back");
-                        influencedCreep.getControl(BetterCharacterControl.class).setWalkDirection(explosionPos.negate().negate());
-                    } else if (influencedCreep.getWorldTranslation().y > explosionPos.y) {
-                        //System.out.println("forward");
-                        influencedCreep.getControl(BetterCharacterControl.class).setWalkDirection(explosionPos.negate());
-
-                    }
-                    influencedCreep.getControl(BetterCharacterControl.class).jump();
+                } else if (influencedCreep.getWorldTranslation().y > explosionPos.y) {
+                    //Move towards base
+                    influencedCreep.getControl(BetterCharacterControl.class).setWalkDirection(explosionPos.negate());
                 }
+                influencedCreep.getControl(BetterCharacterControl.class).jump();
             }
-
         }
     }
 

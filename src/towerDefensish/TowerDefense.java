@@ -33,7 +33,7 @@ import com.jme3.util.SkyFactory;
  *
  * @author Rune Barrett
  */
-public class TowerDefense extends SimpleApplication implements AnimEventListener {
+public class TowerDefense extends SimpleApplication {
 
     private final static Trigger TRIGGER_CHARGE = new KeyTrigger(KeyInput.KEY_C);
     private final static Trigger TRIGGER_CHARGE2 = new MouseButtonTrigger(MouseInput.BUTTON_RIGHT);
@@ -54,8 +54,9 @@ public class TowerDefense extends SimpleApplication implements AnimEventListener
     private final static String MAPPING_SELECTSPELL4 = "SelectSpell 4";
     private int selected = -1;
     private int oldSelected = -1;
-    GamePlayAppState state;
-    PointLight lamp = new PointLight();
+    private GamePlayAppState state;
+    private StartScreenAppState startState;
+    private PointLight lamp = new PointLight();
     private BitmapText statsTitle;
     private BitmapText playerHealth;
     private BitmapText towerHealth;
@@ -87,17 +88,67 @@ public class TowerDefense extends SimpleApplication implements AnimEventListener
     @Override
     public void simpleInitApp() {
 
-        state = new GamePlayAppState();
-        stateManager.attach(state);
+        //state = new GamePlayAppState();
+        startState = new StartScreenAppState();
+        stateManager.attach(startState);
         disableWASDandAddMappingsAndListeners();
-        initGui();
         inGameSettings();
+        initGui();
         initSky();
     }
 
     @Override
     public void simpleUpdate(float tpf) {
         update2DGui(tpf);
+    }
+
+    private void update2DGui(float tpf) {
+        //Set 2d GUI
+        statsTitle.setText("Current Statistics");
+        playerHealth.setText("     Health:         " + state.getHealth());
+        playerCharges.setText("     Charges:     " + state.getBudget());
+        playerCreepCount.setText("     Creeps Killed:   " + state.getCreepsKilled());
+        playerMana.setText("     Mana:    " + state.getMana());
+        chargeTimer += tpf;
+        if (state.getChargeAdded()) {
+            budgetIncremented.setText("     Charge added! Keep killing!");
+            state.setChargeAdded(false);
+        }
+        if (chargeTimer > 5) {
+            chargeTimer = 0;
+            budgetIncremented.setText("     Kill more.. Now..");
+        }
+
+        CollisionResults results = clickRayCollission();
+        if (results.size() > 0) {
+            Geometry target = results.getClosestCollision().getGeometry();
+            if (target.getControl(TowerControl.class) instanceof TowerControl) {
+                towerName.setText(target.getName());
+                towerCharges.setText("     Charges:     " + target.getControl(TowerControl.class).getCharges());
+                towerHealth.setText("     Health:     " + target.getControl(TowerControl.class).getHealth());
+                towerBullets.setText("     Bullets:     " + target.getControl(TowerControl.class).getBullets());
+            }
+        } else {
+            towerName.setText("");
+            towerCharges.setText("");
+            towerHealth.setText("");
+            towerBullets.setText("");
+        }
+        infoTimer += tpf;
+        if (state.isNewInfo()) {
+            infoTimer = 0;
+            infoMessage.setText(state.getInfoMessage());
+            state.setIsNewInfo(false);
+        }
+        if (infoTimer > 5) {
+            infoMessage.setText("");
+        }
+        if (state.getCooldown() > 0) {
+            cooldownText.setText("Cooldown: " + state.getCooldown());
+        } else {
+            cooldownText.setText("");
+        }
+
     }
     private ActionListener actionListener = new ActionListener() {
         public void onAction(String name, boolean isPressed, float tpf) {
@@ -277,8 +328,8 @@ public class TowerDefense extends SimpleApplication implements AnimEventListener
         //Colldown
         cooldownText = new BitmapText(guiFont);
         cooldownText.setSize(guiFont.getCharSet().getRenderedSize());
-        cooldownText.move(settings.getWidth()-200, // X
-                settings.getHeight()-cooldownText.getHeight(), // Y
+        cooldownText.move(settings.getWidth() - 200, // X
+                settings.getHeight() - cooldownText.getHeight(), // Y
                 0); // Z (depth layer)
         guiNode.attachChild(cooldownText);
 
@@ -291,53 +342,28 @@ public class TowerDefense extends SimpleApplication implements AnimEventListener
 //        guiNode.attachChild(frame);
     }
 
-    private void update2DGui(float tpf) {
-        //Set 2d GUI
-        statsTitle.setText("Current Statistics");
-        playerHealth.setText("     Health:         " + state.getHealth());
-        playerCharges.setText("     Charges:     " + state.getBudget());
-        playerCreepCount.setText("     Creeps Killed:   " + state.getCreepsKilled());
-        playerMana.setText("     Mana:    " + state.getMana());
-        chargeTimer += tpf;
-        if (state.getChargeAdded()) {
-            budgetIncremented.setText("     Charge added! Keep killing!");
-            state.setChargeAdded(false);
-        }
-        if (chargeTimer > 5) {
-            chargeTimer = 0;
-            budgetIncremented.setText("     Kill more.. Now..");
-        }
+    private void initSky() {
+        Texture west = assetManager.loadTexture("Textures/Sky/Lagoon/lagoon_west.jpg");
+        Texture east = assetManager.loadTexture("Textures/Sky/Lagoon/lagoon_east.jpg");
+        Texture north = assetManager.loadTexture("Textures/Sky/Lagoon/lagoon_north.jpg");
+        Texture south = assetManager.loadTexture("Textures/Sky/Lagoon/lagoon_south.jpg");
+        Texture up = assetManager.loadTexture("Textures/Sky/Lagoon/lagoon_up.jpg");
+        Texture down = assetManager.loadTexture("Textures/Sky/Lagoon/lagoon_down.jpg");
+        Spatial sky = SkyFactory.createSky(assetManager, west, east, north, south, up, down);
+        sky.rotate(0, FastMath.DEG_TO_RAD * 100, 0);
+        rootNode.attachChild(sky);
+    }
 
-        CollisionResults results = clickRayCollission();
-        if (results.size() > 0) {
-            Geometry target = results.getClosestCollision().getGeometry();
-            if (target.getControl(TowerControl.class) instanceof TowerControl) {
-                towerName.setText(target.getName());
-                towerCharges.setText("     Charges:     " + target.getControl(TowerControl.class).getCharges());
-                towerHealth.setText("     Health:     " + target.getControl(TowerControl.class).getHealth());
-                towerBullets.setText("     Bullets:     " + target.getControl(TowerControl.class).getBullets());
+    private void disableWASDandAddMappingsAndListeners() {
+        //anonymyous Appstate for disabling WASD controls, because the flycam is initialized after simpleInitApp() 
+        stateManager.attach(new AbstractAppState() {
+            @Override
+            public void initialize(AppStateManager stateManager, Application app) {
+                super.initialize(stateManager, app);
+                addMappingsAndListeners();
+                stateManager.detach(this);
             }
-        } else {
-            towerName.setText("");
-            towerCharges.setText("");
-            towerHealth.setText("");
-            towerBullets.setText("");
-        }
-        infoTimer += tpf;
-        if (state.isNewInfo()) {
-            infoTimer = 0;
-            infoMessage.setText(state.getInfoMessage());
-            state.setIsNewInfo(false);
-        }
-        if (infoTimer > 5) {
-            infoMessage.setText("");
-        }
-        if(state.getCooldown()>0){
-            cooldownText.setText("Cooldown: " + state.getCooldown());
-        }else{
-            cooldownText.setText("");
-        }
-
+        });
     }
 
     private CollisionResults clickRayCollission() {
@@ -355,13 +381,6 @@ public class TowerDefense extends SimpleApplication implements AnimEventListener
         state.setFrostBolt(false);
         state.setFrostNova(false);
         state.setBigSpell(false);
-    }
-
-    public void onAnimCycleDone(AnimControl control, AnimChannel channel, String animName) {
-    }
-
-    public void onAnimChange(AnimControl control, AnimChannel channel, String animName) {
-        System.out.println("animchange");
     }
 
     private void addMappingsAndListeners() {
@@ -408,29 +427,5 @@ public class TowerDefense extends SimpleApplication implements AnimEventListener
     @Override
     public void simpleRender(RenderManager rm) {
         //TODO: add render code
-    }
-
-    private void disableWASDandAddMappingsAndListeners() {
-        //anonymyous Appstate for disabling WASD controls, because the flycam is initialized after simpleInitApp() 
-        stateManager.attach(new AbstractAppState() {
-            @Override
-            public void initialize(AppStateManager stateManager, Application app) {
-                super.initialize(stateManager, app);
-                addMappingsAndListeners();
-                stateManager.detach(this);
-            }
-        });
-    }
-
-    private void initSky() {
-        Texture west = assetManager.loadTexture("Textures/Sky/Lagoon/lagoon_west.jpg");
-        Texture east = assetManager.loadTexture("Textures/Sky/Lagoon/lagoon_east.jpg");
-        Texture north = assetManager.loadTexture("Textures/Sky/Lagoon/lagoon_north.jpg");
-        Texture south = assetManager.loadTexture("Textures/Sky/Lagoon/lagoon_south.jpg");
-        Texture up = assetManager.loadTexture("Textures/Sky/Lagoon/lagoon_up.jpg");
-        Texture down = assetManager.loadTexture("Textures/Sky/Lagoon/lagoon_down.jpg");
-        Spatial sky = SkyFactory.createSky(assetManager, west, east, north, south, up, down);
-        sky.rotate(0, FastMath.DEG_TO_RAD * 100, 0);
-        rootNode.attachChild(sky);
     }
 }

@@ -107,6 +107,8 @@ public class CreepControl extends AbstractControl implements PhysicsTickListener
             GPAState.setHealth(GPAState.getHealth() - 1);
             System.out.println("Player health: " + GPAState.getHealth());
             spatial.removeFromParent();
+            fireEmitter.killAllParticles();
+            fireSize = 0; //REMOVE THEM
         }
 
         attackTimer += tpf;

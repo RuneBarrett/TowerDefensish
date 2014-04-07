@@ -84,7 +84,6 @@ public class GamePlayAppState extends AbstractAppState {
     private boolean frostBoltOn;
     private boolean frostNovaOn;
     private boolean bigSpellOn;
-    private FireBallControl fireControl;
     private String infoMessage = "";
     private RigidBodyControl basePhy;
     private float baseShapeScale;
