@@ -38,7 +38,6 @@ import com.jme3.scene.Node;
 import com.jme3.scene.Spatial;
 import com.jme3.scene.shape.Line;
 import com.jme3.scene.shape.Sphere;
-import com.jme3.system.AppSettings;
 import java.util.ArrayList;
 import spellControls.NormalSpellControl;
 
@@ -90,13 +89,15 @@ public class GamePlayAppState extends AbstractAppState {
     //GUI Settings
     private BitmapText statsTitle;
     private BitmapText playerHealth;
+    private BitmapText playerExperience;
+    private BitmapText playerLevel;
     private BitmapText towerHealth;
     private BitmapText playerCharges;
     private BitmapText towerCharges;
     private BitmapText towerName;
     private BitmapText towerBullets;
     private BitmapText playerCreepCount;
-    private BitmapText budgetIncremented;
+    private BitmapText smallPlayerInfo;
     private BitmapText playerMana;
     private BitmapText infoMessage;
     private BitmapText cooldownText;
@@ -107,7 +108,7 @@ public class GamePlayAppState extends AbstractAppState {
     private float infoTimer;
     private float budgetTimer = 0;
     private float beamTimer = 0;
-    private int numOfCreeps = 15;
+    private int numOfCreeps = 5;
     private int creepHealth = 12;
     private int bNum = 0;
     private boolean chargeAdded = false;
@@ -140,6 +141,7 @@ public class GamePlayAppState extends AbstractAppState {
         createTowers();
 
         initGui();
+        playerControl = playerNode.getChild("player").getControl(PlayerControl.class);
         //bulletAppState.setDebugEnabled(true);
     }
 
@@ -149,13 +151,13 @@ public class GamePlayAppState extends AbstractAppState {
         if (health <= 0) {
             System.out.println("The player lost.");
             lastGameWon = false;
-            playerControl = playerNode.getChild("player").getControl(PlayerControl.class);
+
             playerControl.setDead(true);
 
         } else if (creeps.isEmpty()) {
-            if(!waveAlreadyCleared){
-            wavecleared = true;
-            waveAlreadyCleared = false;
+            if (!waveAlreadyCleared) {
+                wavecleared = true;
+                waveAlreadyCleared = true;
             }
             //stateManager.detach(this);
         }
@@ -270,6 +272,8 @@ public class GamePlayAppState extends AbstractAppState {
         base.setLocalTranslation(basePos);
         base.addControl(new PlayerControl(this, playerNode, assetManager));
         base.setName("player");
+        base.setUserData("xp", 0);
+        base.setUserData("level", 1);
         playerNode.attachChild(base);
 
         basePhy = new RigidBodyControl(0f);
@@ -342,6 +346,7 @@ public class GamePlayAppState extends AbstractAppState {
             creep.setUserData("index", i);
             creep.setUserData("health", creepHealth);
             creep.setUserData("damage", 1);
+            creep.setUserData("xpWorth", 5);
             creep.addControl(new CreepControl(this, bulletAppState, assetManager, creepNode));
 
             creepPhy = new BetterCharacterControl(2.5f, 0.1f, 2f);
@@ -398,15 +403,15 @@ public class GamePlayAppState extends AbstractAppState {
         playerHealth.setText("     Health:         " + getHealth());
         playerCharges.setText("     Charges:     " + getBudget());
         playerCreepCount.setText("     Creeps Killed:   " + getCreepsKilled());
-        playerMana.setText("     Mana:    " + getMana());
+        playerMana.setText("     Mana:           " + getMana());
         chargeTimer += tpf;
         if (getChargeAdded()) {
-            budgetIncremented.setText("     Charge added! Keep killing!");
+            smallPlayerInfo.setText("     Charge added! Keep killing!");
             setChargeAdded(false);
         }
         if (chargeTimer > 5) {
             chargeTimer = 0;
-            budgetIncremented.setText("     Kill more.. Now..");
+            smallPlayerInfo.setText("     Kill more.. Now..");
         }
 
         CollisionResults results = clickRayCollission();
@@ -438,6 +443,13 @@ public class GamePlayAppState extends AbstractAppState {
         } else {
             cooldownText.setText("");
         }
+        ///__________________________________________________________------------------------
+//        int a = playerControl.getExperience();
+//        int b = playerControl.getXpToNextLevel();
+
+            playerExperience.setText("      XP: " + playerControl.getExperience() + " / " + playerControl.getXpToNextLevel());
+        
+        playerLevel.setText("      Level:     "+playerControl.getLevel());
 
     }
 
@@ -475,46 +487,63 @@ public class GamePlayAppState extends AbstractAppState {
         guiNode.attachChild(infoMessage);
 
 //------------------------------------------------------------------------------
-        //Player health
         guiFont = assetManager.loadFont("Interface/Fonts/Cracked28.fnt");
+
+        //Small player info
+        smallPlayerInfo = new BitmapText(guiFont);
+        smallPlayerInfo.setSize(guiFont.getCharSet().getRenderedSize());
+        smallPlayerInfo.move(1, // X
+                screenHeight - smallPlayerInfo.getHeight() * 1 - 10, // Y
+                0); // Z (depth layer)
+        guiNode.attachChild(smallPlayerInfo);
+
+        //Player health
         playerHealth = new BitmapText(guiFont);
         playerHealth.setSize(guiFont.getCharSet().getRenderedSize());
         playerHealth.move(1, // X
-                screenHeight - playerHealth.getHeight() - 10, // Y
-                0); // Z (depth layer)
-        guiNode.attachChild(playerHealth);
-
-        //Player charges
-        playerCharges = new BitmapText(guiFont);
-        playerCharges.setSize(guiFont.getCharSet().getRenderedSize());
-        playerCharges.move(1, // X
                 screenHeight - playerHealth.getHeight() * 2 - 10, // Y
                 0); // Z (depth layer)
-        guiNode.attachChild(playerCharges);
-
-        //Charge added to budget
-        budgetIncremented = new BitmapText(guiFont);
-        budgetIncremented.setSize(guiFont.getCharSet().getRenderedSize());
-        budgetIncremented.move(1, // X
-                screenHeight - playerHealth.getHeight() * 3 - 10, // Y
-                0); // Z (depth layer)
-        guiNode.attachChild(budgetIncremented);
-
-        //Player charges
-        playerCreepCount = new BitmapText(guiFont);
-        playerCreepCount.setSize(guiFont.getCharSet().getRenderedSize());
-        playerCreepCount.move(1, // X
-                screenHeight - playerCreepCount.getHeight() * 4 - 10, // Y
-                0); // Z (depth layer)
-        guiNode.attachChild(playerCreepCount);
+        guiNode.attachChild(playerHealth);
 
         //Player Mana
         playerMana = new BitmapText(guiFont);
         playerMana.setSize(guiFont.getCharSet().getRenderedSize());
         playerMana.move(1, // X
-                screenHeight - playerMana.getHeight() * 5 - 10, // Y
+                screenHeight - playerMana.getHeight() * 3 - 10, // Y
                 0); // Z (depth layer)
         guiNode.attachChild(playerMana);
+
+        //Player charges
+        playerCharges = new BitmapText(guiFont);
+        playerCharges.setSize(guiFont.getCharSet().getRenderedSize());
+        playerCharges.move(1, // X
+                screenHeight - playerHealth.getHeight() * 4 - 10, // Y
+                0); // Z (depth layer)
+        guiNode.attachChild(playerCharges);
+
+        //Player creep count
+        playerCreepCount = new BitmapText(guiFont);
+        playerCreepCount.setSize(guiFont.getCharSet().getRenderedSize());
+        playerCreepCount.move(1, // X
+                screenHeight - playerCreepCount.getHeight() * 5 - 10, // Y
+                0); // Z (depth layer)
+        guiNode.attachChild(playerCreepCount);
+
+        //Player level
+        playerLevel = new BitmapText(guiFont);
+        playerLevel.setSize(guiFont.getCharSet().getRenderedSize());
+        playerLevel.move(1, // X
+                screenHeight - playerLevel.getHeight() * 6 - 10, // Y
+                0); // Z (depth layer)
+        guiNode.attachChild(playerLevel);
+
+        //Player experience
+        playerExperience = new BitmapText(guiFont);
+        playerExperience.setSize(guiFont.getCharSet().getRenderedSize());
+        playerExperience.move(1, // X
+                screenHeight - playerExperience.getHeight() * 7 - 10, // Y
+                0); // Z (depth layer)
+        guiNode.attachChild(playerExperience);
 
         //towerHealth
         towerHealth = new BitmapText(guiFont);
@@ -569,7 +598,6 @@ public class GamePlayAppState extends AbstractAppState {
 
     @Override
     public void cleanup() {
-        //app.stop();
     }
 
     // Only accessors and mutators below
@@ -633,8 +661,11 @@ public class GamePlayAppState extends AbstractAppState {
         return numOfCreeps;
     }
 
-    public void incrementCreepsKilled() {
+    public void incrementCreepsKilled(int xpWorth) {
         creepsKilled++;
+        int temp = playerControl.getExperience() + xpWorth;
+        System.out.println(temp);
+        playerControl.setExperience(temp);
     }
 
     public void setChargeAdded(boolean bool) {
@@ -695,10 +726,18 @@ public class GamePlayAppState extends AbstractAppState {
     }
 
     public boolean getWaveCleared() {
-return wavecleared;
+        return wavecleared;
     }
 
-    void setWaveCleared(boolean b) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    public void setWaveCleared(boolean b) {
+        wavecleared = b;
+    }
+
+    public void maxMana() {
+        mana = maxMana;
+    }
+
+    void setSmallPlayerInfoText(String str) {
+        smallPlayerInfo.setText(str);
     }
 }

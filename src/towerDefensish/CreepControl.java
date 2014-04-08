@@ -95,10 +95,11 @@ public class CreepControl extends AbstractControl implements PhysicsTickListener
             }
             //if health are not bigger than 0, die
         } else {
-            GPAState.incrementCreepsKilled();
+            GPAState.incrementCreepsKilled(getXpWorth());
             GPAState.setBudget(GPAState.getBudget() + 1);
             GPAState.removeCreep(spatial);
             GPAState.setChargeAdded(true);
+            
             BAState.getPhysicsSpace().remove(spatial.getControl(BetterCharacterControl.class));
             spatial.removeFromParent();
         }
@@ -188,6 +189,9 @@ public class CreepControl extends AbstractControl implements PhysicsTickListener
 
     public int getDamage() {
         return (Integer) spatial.getUserData("damage");
+    }
+    public int getXpWorth() {
+        return (Integer) spatial.getUserData("xpWorth");
     }
 
     public void setHealth(int newHealth) {
