@@ -49,7 +49,7 @@ public class CreepControl extends AbstractControl implements PhysicsTickListener
     private final AssetManager assetManager;
     private Node creepNode;
     private float fireSize = 1;
-    private int temp;
+    //private int temp;
 
     public CreepControl(GamePlayAppState GPAState, BulletAppState BAState, AssetManager assetManager, Node creepNode) {
         this.GPAState = GPAState;
@@ -68,14 +68,14 @@ public class CreepControl extends AbstractControl implements PhysicsTickListener
         towers = GPAState.getTowers();
         creepPos = spatial.getLocalTranslation();
         fireEmitter.setLocalTranslation(creepPos);
-
-        //Check if tower in range, and move towards it
         moveTowardsTower = false;
         fireSize = maxHealth - getHealth();
+
+        //Check if tower in range, and move towards it
         if (getHealth() > 0) {
             //Only move if not frozen
             if (!frozen) {
-                //only attackt towers if not at full health
+                //only attack towers if not at full health
                 if (getHealth() < maxHealth) {
                     for (Spatial tower : towers) {
                         towerPos = tower.getWorldTranslation();
@@ -109,10 +109,10 @@ public class CreepControl extends AbstractControl implements PhysicsTickListener
         //NOT USED ANYMORE
         if (spatial.getWorldTranslation().z >= -1) {
             GPAState.setHealth(GPAState.getHealth() - 1);
-            System.out.println("Player health!!!!!: " + GPAState.getHealth());
+            System.out.println("Player health: " + GPAState.getHealth());
             //spatial.removeFromParent();
             //fireEmitter.killAllParticles();
-            fireSize = 0; 
+            fireSize = 0;
         }
 
         attackTimer += tpf;
@@ -124,19 +124,33 @@ public class CreepControl extends AbstractControl implements PhysicsTickListener
 
     }
 
+    private void AttackTowersInRange(float tpf) {
+
+        for (Spatial tower : towers) {
+            if ((spatial.getWorldTranslation().distance(tower.getWorldTranslation()) < 8)) {//spatial.getWorldTranslation().z-creep.getWorldTranslation().z  < 10
+                reachable.add(tower.getControl(TowerControl.class));
+            }
+        }
+        if (attackTimer > 2f) {
+            attackTimer = 0;
+            for (TowerControl tc : reachable) {
+                if (tc.getHealth() > 0) {
+                    tc.setHealth(tc.getHealth() - getDamage());
+                }
+            }
+
+            if (baseInRange && reaching.contains(spatial)) {
+                baseInRange = false;
+                GPAState.setHealth(GPAState.getHealth() - getDamage());
+            }
+        }
+    }
+
     public void moveTowards(Vector3f from, Vector3f to, float tpf) {
         direction = new Vector3f(to.x - from.x, to.y - from.y, to.z - from.z);
         //spatial.getControl(RigidBodyControl.class).setLinearVelocity(direction.normalizeLocal().mult(tpf * moveSpeed));
         spatial.getControl(BetterCharacterControl.class).setWalkDirection(direction.normalizeLocal().mult(speed));
         spatial.getControl(BetterCharacterControl.class).setViewDirection(direction.normalizeLocal());
-    }
-
-    public void prePhysicsTick(PhysicsSpace space, float tpf) {
-        //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
-
-    public void physicsTick(PhysicsSpace space, float tpf) {
-        //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
     public void collision(PhysicsCollisionEvent event) {
@@ -179,6 +193,14 @@ public class CreepControl extends AbstractControl implements PhysicsTickListener
         creepNode.attachChild(fireEmitter);
     }
 
+    public void prePhysicsTick(PhysicsSpace space, float tpf) {
+        //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    public void physicsTick(PhysicsSpace space, float tpf) {
+        //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
     public int getIndex() {
         return (Integer) spatial.getUserData("index");
     }
@@ -201,27 +223,5 @@ public class CreepControl extends AbstractControl implements PhysicsTickListener
 
     @Override
     protected void controlRender(RenderManager rm, ViewPort vp) {
-    }
-
-    private void AttackTowersInRange(float tpf) {
-
-        for (Spatial tower : towers) {
-            if ((spatial.getWorldTranslation().distance(tower.getWorldTranslation()) < 8)) {//spatial.getWorldTranslation().z-creep.getWorldTranslation().z  < 10
-                reachable.add(tower.getControl(TowerControl.class));
-            }
-        }
-        if (attackTimer > 2f) {
-            attackTimer = 0;
-            for (TowerControl tc : reachable) {
-                if (tc.getHealth() > 0) {
-                    tc.setHealth(tc.getHealth() - getDamage());
-                }
-            }
-
-            if (baseInRange && reaching.contains(spatial)) {
-                baseInRange = false;
-                GPAState.setHealth(GPAState.getHealth() - getDamage());
-            }
-        }
     }
 }
