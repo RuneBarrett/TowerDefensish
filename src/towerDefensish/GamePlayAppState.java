@@ -18,6 +18,9 @@ import com.jme3.asset.TextureKey;
 import com.jme3.bullet.BulletAppState;
 import com.jme3.bullet.control.BetterCharacterControl;
 import com.jme3.bullet.control.RigidBodyControl;
+import com.jme3.collision.CollisionResults;
+import com.jme3.font.BitmapFont;
+import com.jme3.font.BitmapText;
 import com.jme3.light.AmbientLight;
 import com.jme3.light.DirectionalLight;
 import com.jme3.light.PointLight;
@@ -25,6 +28,8 @@ import com.jme3.material.Material;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.FastMath;
 import com.jme3.math.Quaternion;
+import com.jme3.math.Ray;
+import com.jme3.math.Vector2f;
 import com.jme3.math.Vector3f;
 import com.jme3.renderer.Camera;
 import com.jme3.scene.Geometry;
@@ -33,6 +38,7 @@ import com.jme3.scene.Node;
 import com.jme3.scene.Spatial;
 import com.jme3.scene.shape.Line;
 import com.jme3.scene.shape.Sphere;
+import com.jme3.system.AppSettings;
 import java.util.ArrayList;
 import spellControls.NormalSpellControl;
 
@@ -57,10 +63,18 @@ public class GamePlayAppState extends AbstractAppState {
     private Node rootNode;
     private Node ballNode;
     private Node explosionNode;
+    private BulletAppState bulletAppState;
+    private RigidBodyControl towerPhy;
     private RigidBodyControl floorPhy;
+    private RigidBodyControl ballPhy;
+    private RigidBodyControl basePhy;
+    private BetterCharacterControl creepPhy;
     private ArrayList<Spatial> creeps;
     private ArrayList<Spatial> towers;
+    private Mesh spellMesh;
+    //private String infoMessage = "";
     private static final String ANI_FLY = "my_animation";
+    //Player settings
     private int level = 0;
     private int score = 0;
     private int health = 20;
@@ -68,27 +82,40 @@ public class GamePlayAppState extends AbstractAppState {
     private float mana;
     private float maxMana = 50;
     private int creepsKilled = 0;
-    private float budgetTimer = 0;
-    private float beamTimer = 0;
-    private int numOfCreeps = 15;
-    private int creepHealth = 12;
-    private boolean lastGameWon = false;
-    private int bNum = 0;
-    private BulletAppState bulletAppState;
-    private RigidBodyControl towerPhy;
-    private BetterCharacterControl creepPhy;
-    private boolean chargeAdded = false;
-    private Mesh spellMesh;
-    private RigidBodyControl ballPhy;
     private boolean fireballOn;
     private boolean frostBoltOn;
     private boolean frostNovaOn;
     private boolean bigSpellOn;
-    private String infoMessage = "";
-    private RigidBodyControl basePhy;
+    private boolean lastGameWon = false;
+    //GUI Settings
+    private BitmapText statsTitle;
+    private BitmapText playerHealth;
+    private BitmapText towerHealth;
+    private BitmapText playerCharges;
+    private BitmapText towerCharges;
+    private BitmapText towerName;
+    private BitmapText towerBullets;
+    private BitmapText playerCreepCount;
+    private BitmapText budgetIncremented;
+    private BitmapText playerMana;
+    private BitmapText infoMessage;
+    private BitmapText cooldownText;
+    private int screenHeight;
+    private int screenWidth;
+    private String info;
+    private float chargeTimer;
+    private float infoTimer;
+    private float budgetTimer = 0;
+    private float beamTimer = 0;
+    private int numOfCreeps = 15;
+    private int creepHealth = 12;
+    private int bNum = 0;
+    private boolean chargeAdded = false;
     private float baseShapeScale;
     private boolean isNewInfo;
     private float cooldown;
+    private boolean wavecleared = false;
+    private boolean waveAlreadyCleared = false;
 
     @Override
     public void initialize(AppStateManager stateManager, Application app) {
@@ -99,12 +126,9 @@ public class GamePlayAppState extends AbstractAppState {
         rootNode = this.app.getRootNode();
         assetManager = this.app.getAssetManager();
         this.stateManager = stateManager;
-
         bulletAppState = new BulletAppState();
-
         stateManager.attach(bulletAppState);
 
-        //stoneMat = assetManager.loadMaterial("Textures/Turret/turret.png");
         spellMesh = new Sphere(32, 32, 2.50f, true, false);
         mana = maxMana;
 
@@ -114,12 +138,14 @@ public class GamePlayAppState extends AbstractAppState {
         createBase();
         createCreeps(numOfCreeps);
         createTowers();
+
+        initGui();
         //bulletAppState.setDebugEnabled(true);
     }
 
     @Override
     public void update(float tpf) {
-
+        update2DGui(tpf);
         if (health <= 0) {
             System.out.println("The player lost.");
             lastGameWon = false;
@@ -127,9 +153,11 @@ public class GamePlayAppState extends AbstractAppState {
             playerControl.setDead(true);
 
         } else if (creeps.isEmpty()) {
-            System.out.println("The player won.");
-            lastGameWon = true;
-            stateManager.detach(this);
+            if(!waveAlreadyCleared){
+            wavecleared = true;
+            waveAlreadyCleared = false;
+            }
+            //stateManager.detach(this);
         }
         budgetTimer += tpf;
         if (budgetTimer >= 15.0f) {
@@ -166,7 +194,7 @@ public class GamePlayAppState extends AbstractAppState {
                     ballGeo.addControl(new FireBallControl(this, assetManager, ballNode, ballGeo, bulletAppState));
                     mana = mana - 18;
                 } else {
-                    infoMessage = "Mana too low to cast a Fireball!";
+                    info = "Mana too low to cast a Fireball!";
                     isNewInfo = true;
                 }
             } else if (frostBoltOn) {
@@ -177,7 +205,7 @@ public class GamePlayAppState extends AbstractAppState {
                     ballGeo.addControl(new FrostboltControl(this, assetManager, ballNode, ballGeo, bulletAppState));
                     mana = mana - 12;
                 } else {
-                    infoMessage = "Mana too low to cast a Frostbolt!";
+                    info = "Mana too low to cast a Frostbolt!";
                     isNewInfo = true;
                 }
             } else if (frostNovaOn) {
@@ -203,7 +231,7 @@ public class GamePlayAppState extends AbstractAppState {
 
             ballPhy.setLinearVelocity(cam.getDirection().mult(65));
         } else {
-            infoMessage = "Spells are on cooldown.";
+            info = "Spells are on cooldown.";
             isNewInfo = true;
         }
     }
@@ -364,11 +392,187 @@ public class GamePlayAppState extends AbstractAppState {
         cam.setRotation(new Quaternion(0.0f, 1.0f, 0.0f, 0));
     }
 
-    @Override
-    public void cleanup() {
-        app.stop();
+    private void update2DGui(float tpf) {
+        //Set 2d GUI
+        statsTitle.setText("Current Statistics");
+        playerHealth.setText("     Health:         " + getHealth());
+        playerCharges.setText("     Charges:     " + getBudget());
+        playerCreepCount.setText("     Creeps Killed:   " + getCreepsKilled());
+        playerMana.setText("     Mana:    " + getMana());
+        chargeTimer += tpf;
+        if (getChargeAdded()) {
+            budgetIncremented.setText("     Charge added! Keep killing!");
+            setChargeAdded(false);
+        }
+        if (chargeTimer > 5) {
+            chargeTimer = 0;
+            budgetIncremented.setText("     Kill more.. Now..");
+        }
+
+        CollisionResults results = clickRayCollission();
+        if (results.size() > 0) {
+            Geometry target = results.getClosestCollision().getGeometry();
+            if (target.getControl(TowerControl.class) instanceof TowerControl) {
+                towerName.setText(target.getName());
+                towerCharges.setText("     Charges:     " + target.getControl(TowerControl.class).getCharges());
+                towerHealth.setText("     Health:     " + target.getControl(TowerControl.class).getHealth());
+                towerBullets.setText("     Bullets:     " + target.getControl(TowerControl.class).getBullets());
+            }
+        } else {
+            towerName.setText("");
+            towerCharges.setText("");
+            towerHealth.setText("");
+            towerBullets.setText("");
+        }
+        infoTimer += tpf;
+        if (isNewInfo()) {
+            infoTimer = 0;
+            infoMessage.setText(getInfoMessage());
+            setIsNewInfo(false);
+        }
+        if (infoTimer > 5) {
+            infoMessage.setText("");
+        }
+        if (getCooldown() > 0) {
+            cooldownText.setText("Cooldown: " + getCooldown());
+        } else {
+            cooldownText.setText("");
+        }
+
     }
 
+    private void initGui() {
+        //Selection light
+        //lamp.setColor(ColorRGBA.Cyan);
+        //lamp.setPosition(new Vector3f(0, 3, 0));
+        Node guiNode = app.getGuiNode();
+
+        //Stat title
+        BitmapFont guiFont = assetManager.loadFont("Interface/Fonts/Cracked.fnt");
+
+        statsTitle = new BitmapText(guiFont);
+        statsTitle.setSize(guiFont.getCharSet().getRenderedSize());
+        statsTitle.move(1, // X
+                screenHeight, // Y
+                0); // Z (depth layer)
+        guiNode.attachChild(statsTitle);
+
+        //Tower title/name
+        towerName = new BitmapText(guiFont);
+        towerName.setSize(guiFont.getCharSet().getRenderedSize());
+        towerName.move(0, // X
+                0 + towerName.getLineHeight() * 3.3f, // Y
+                0); // Z (depth layer)
+        guiNode.attachChild(towerName);
+
+        //Info message
+        infoMessage = new BitmapText(guiFont);
+        infoMessage.setSize(guiFont.getCharSet().getRenderedSize());
+        infoMessage.move(
+                screenWidth / 2 - 120, // X
+                screenHeight / 5, // Y
+                0); // Z (depth layer)
+        guiNode.attachChild(infoMessage);
+
+//------------------------------------------------------------------------------
+        //Player health
+        guiFont = assetManager.loadFont("Interface/Fonts/Cracked28.fnt");
+        playerHealth = new BitmapText(guiFont);
+        playerHealth.setSize(guiFont.getCharSet().getRenderedSize());
+        playerHealth.move(1, // X
+                screenHeight - playerHealth.getHeight() - 10, // Y
+                0); // Z (depth layer)
+        guiNode.attachChild(playerHealth);
+
+        //Player charges
+        playerCharges = new BitmapText(guiFont);
+        playerCharges.setSize(guiFont.getCharSet().getRenderedSize());
+        playerCharges.move(1, // X
+                screenHeight - playerHealth.getHeight() * 2 - 10, // Y
+                0); // Z (depth layer)
+        guiNode.attachChild(playerCharges);
+
+        //Charge added to budget
+        budgetIncremented = new BitmapText(guiFont);
+        budgetIncremented.setSize(guiFont.getCharSet().getRenderedSize());
+        budgetIncremented.move(1, // X
+                screenHeight - playerHealth.getHeight() * 3 - 10, // Y
+                0); // Z (depth layer)
+        guiNode.attachChild(budgetIncremented);
+
+        //Player charges
+        playerCreepCount = new BitmapText(guiFont);
+        playerCreepCount.setSize(guiFont.getCharSet().getRenderedSize());
+        playerCreepCount.move(1, // X
+                screenHeight - playerCreepCount.getHeight() * 4 - 10, // Y
+                0); // Z (depth layer)
+        guiNode.attachChild(playerCreepCount);
+
+        //Player Mana
+        playerMana = new BitmapText(guiFont);
+        playerMana.setSize(guiFont.getCharSet().getRenderedSize());
+        playerMana.move(1, // X
+                screenHeight - playerMana.getHeight() * 5 - 10, // Y
+                0); // Z (depth layer)
+        guiNode.attachChild(playerMana);
+
+        //towerHealth
+        towerHealth = new BitmapText(guiFont);
+        towerHealth.setSize(guiFont.getCharSet().getRenderedSize());
+        towerHealth.move(1, // X
+                towerHealth.getHeight() * 3.5f, // Y
+                0); // Z (depth layer)
+        guiNode.attachChild(towerHealth);
+
+        //towerCharges
+        towerCharges = new BitmapText(guiFont);
+        towerCharges.setSize(guiFont.getCharSet().getRenderedSize());
+        towerCharges.move(1, // X
+                towerCharges.getHeight() * 2.5f, // Y
+                0); // Z (depth layer)
+        guiNode.attachChild(towerCharges);
+
+        //towerBullets
+        towerBullets = new BitmapText(guiFont);
+        towerBullets.setSize(guiFont.getCharSet().getRenderedSize());
+        towerBullets.move(1, // X
+                towerBullets.getHeight() * 1.5f, // Y
+                0); // Z (depth layer)
+        guiNode.attachChild(towerBullets);
+
+        //Colldown
+        cooldownText = new BitmapText(guiFont);
+        cooldownText.setSize(guiFont.getCharSet().getRenderedSize());
+        cooldownText.move(screenWidth - 200, // X
+                screenHeight - cooldownText.getHeight(), // Y
+                0); // Z (depth layer)
+        guiNode.attachChild(cooldownText);
+
+//        Picture frame = new Picture("User interface frame");
+//        frame.setImage(assetManager, "Interface/Pics/sword.png", false);
+//        frame.move(settings.getWidth(), settings.getHeight() - 200, -2);
+//        frame.rotate(0, 0, FastMath.DEG_TO_RAD * 90);
+//        frame.setWidth(150);
+//        frame.setHeight(220);
+//        guiNode.attachChild(frame);
+    }
+
+    private CollisionResults clickRayCollission() {
+        CollisionResults results = new CollisionResults();
+        Vector2f click2d = app.getInputManager().getCursorPosition();
+        Vector3f click3d = cam.getWorldCoordinates(new Vector2f(click2d.getX(), click2d.getY()), 0f);
+        Vector3f dir = cam.getWorldCoordinates(new Vector2f(click2d.getX(), click2d.getY()), 1f).subtractLocal(click3d);
+        Ray ray = new Ray(click3d, dir);
+        rootNode.collideWith(ray, results);
+        return results;
+    }
+
+    @Override
+    public void cleanup() {
+        //app.stop();
+    }
+
+    // Only accessors and mutators below
     public int getLevel() {
         return level;
     }
@@ -385,18 +589,6 @@ public class GamePlayAppState extends AbstractAppState {
         return health;
     }
 
-    public ArrayList<Spatial> getCreeps() {
-        return creeps;
-    }
-
-    public ArrayList<Spatial> getTowers() {
-        return towers;
-    }
-
-    public void removeCreep(Spatial creep) {
-        creeps.remove(creep);
-    }
-
     public void setLevel(int level) {
         this.level = level;
     }
@@ -411,6 +603,18 @@ public class GamePlayAppState extends AbstractAppState {
 
     public void setBudget(int budget) {
         this.budget = budget;
+    }
+
+    public ArrayList<Spatial> getCreeps() {
+        return creeps;
+    }
+
+    public ArrayList<Spatial> getTowers() {
+        return towers;
+    }
+
+    public void removeCreep(Spatial creep) {
+        creeps.remove(creep);
     }
 
     public boolean isLastGameWon() {
@@ -474,14 +678,27 @@ public class GamePlayAppState extends AbstractAppState {
     }
 
     public String getInfoMessage() {
-        return infoMessage;
+        return info;
     }
 
     public void setIsNewInfo(boolean bool) {
         isNewInfo = bool;
     }
-    
-    public float getCooldown(){
+
+    public float getCooldown() {
         return cooldown;
+    }
+
+    public void setScreenSize(int height, int width) {
+        screenHeight = height;
+        screenWidth = width;
+    }
+
+    public boolean getWaveCleared() {
+return wavecleared;
+    }
+
+    void setWaveCleared(boolean b) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 }

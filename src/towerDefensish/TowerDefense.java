@@ -54,7 +54,7 @@ public class TowerDefense extends SimpleApplication {
     private final static String MAPPING_SELECTSPELL4 = "SelectSpell 4";
     private int selected = -1;
     private int oldSelected = -1;
-    private GamePlayAppState state;
+    private GamePlayAppState GPAState;
     private StartScreenAppState startState;
     private PointLight lamp = new PointLight();
     private BitmapText statsTitle;
@@ -88,31 +88,44 @@ public class TowerDefense extends SimpleApplication {
     @Override
     public void simpleInitApp() {
 
-        //state = new GamePlayAppState();
+        GPAState = new GamePlayAppState();
+        GPAState.setScreenSize(settings.getHeight(), settings.getWidth());
+        GPAState.setEnabled(false);
+
         startState = new StartScreenAppState();
         stateManager.attach(startState);
-        disableWASDandAddMappingsAndListeners();
+
         inGameSettings();
-        initGui();
         initSky();
     }
 
     @Override
     public void simpleUpdate(float tpf) {
-        update2DGui(tpf);
+        if (startState.getStartGame()) {
+            disableWASDandAddMappingsAndListeners();
+            stateManager.detach(startState);
+            //initSky();
+            GPAState.setEnabled(true);
+            stateManager.attach(GPAState);
+            startState.setStartGame(false);
+        }
+        if(GPAState.getWaveCleared()){
+            System.out.println("Time for Act I!");
+            GPAState.setWaveCleared(false);
+        }
     }
 
     private void update2DGui(float tpf) {
         //Set 2d GUI
         statsTitle.setText("Current Statistics");
-        playerHealth.setText("     Health:         " + state.getHealth());
-        playerCharges.setText("     Charges:     " + state.getBudget());
-        playerCreepCount.setText("     Creeps Killed:   " + state.getCreepsKilled());
-        playerMana.setText("     Mana:    " + state.getMana());
+        playerHealth.setText("     Health:         " + GPAState.getHealth());
+        playerCharges.setText("     Charges:     " + GPAState.getBudget());
+        playerCreepCount.setText("     Creeps Killed:   " + GPAState.getCreepsKilled());
+        playerMana.setText("     Mana:    " + GPAState.getMana());
         chargeTimer += tpf;
-        if (state.getChargeAdded()) {
+        if (GPAState.getChargeAdded()) {
             budgetIncremented.setText("     Charge added! Keep killing!");
-            state.setChargeAdded(false);
+            GPAState.setChargeAdded(false);
         }
         if (chargeTimer > 5) {
             chargeTimer = 0;
@@ -135,16 +148,16 @@ public class TowerDefense extends SimpleApplication {
             towerBullets.setText("");
         }
         infoTimer += tpf;
-        if (state.isNewInfo()) {
+        if (GPAState.isNewInfo()) {
             infoTimer = 0;
-            infoMessage.setText(state.getInfoMessage());
-            state.setIsNewInfo(false);
+            //infoMessage.setText(state.getInfoMessage());
+            GPAState.setIsNewInfo(false);
         }
         if (infoTimer > 5) {
             infoMessage.setText("");
         }
-        if (state.getCooldown() > 0) {
-            cooldownText.setText("Cooldown: " + state.getCooldown());
+        if (GPAState.getCooldown() > 0) {
+            cooldownText.setText("Cooldown: " + GPAState.getCooldown());
         } else {
             cooldownText.setText("");
         }
@@ -152,78 +165,79 @@ public class TowerDefense extends SimpleApplication {
     }
     private ActionListener actionListener = new ActionListener() {
         public void onAction(String name, boolean isPressed, float tpf) {
-            if (name.equals(MAPPING_SHIFT)) {
-                shiftHeld = true;
-                inputManager.setCursorVisible(false);
-                flyCam.setEnabled(true);
+            if (GPAState.isEnabled()) {
+                if (name.equals(MAPPING_SHIFT)) {
+                    shiftHeld = true;
+                    inputManager.setCursorVisible(false);
+                    flyCam.setEnabled(true);
 
-            }
-            if (name.equals(MAPPING_SHIFT) && !isPressed) {
-                shiftHeld = false;
-                inputManager.setCursorVisible(false);
-                flyCam.setEnabled(false);
-                Vector3f c = new Vector3f(0.0f, 28.0f, 75.0f);
-                cam.setLocation(c);
-                cam.setRotation(new Quaternion(0.0f, 1.0f, 0.0f, 0));
-            }
-            if (name.equals(MAPPING_SHOOT) && !isPressed && shiftHeld) {
-                state.shoot();
-            }
-            if (name.equals(MAPPING_SELECT) && !isPressed && !shiftHeld) {
-                CollisionResults results = clickRayCollission();
+                }
+                if (name.equals(MAPPING_SHIFT) && !isPressed) {
+                    shiftHeld = false;
+                    inputManager.setCursorVisible(false);
+                    flyCam.setEnabled(false);
+                    Vector3f c = new Vector3f(0.0f, 28.0f, 75.0f);
+                    cam.setLocation(c);
+                    cam.setRotation(new Quaternion(0.0f, 1.0f, 0.0f, 0));
+                }
+                if (name.equals(MAPPING_SHOOT) && !isPressed && shiftHeld) {
+                    GPAState.shoot();
+                }
+                if (name.equals(MAPPING_SELECT) && !isPressed && !shiftHeld) {
+                    CollisionResults results = clickRayCollission();
 
-
-                if (results.size() > 0) {
-                    Geometry target = results.getClosestCollision().getGeometry();
-                    if (target.getControl(TowerControl.class) instanceof TowerControl) {
-                        selected = target.getControl(TowerControl.class).getIndex();
+                    if (results.size() > 0) {
+                        Geometry target = results.getClosestCollision().getGeometry();
+                        if (target.getControl(TowerControl.class) instanceof TowerControl) {
+                            selected = target.getControl(TowerControl.class).getIndex();
+                            try {
+                                rootNode.getChild("Tower " + oldSelected).getControl(TowerControl.class).getSpatial().removeLight(lamp);//do something
+                            } catch (NullPointerException e) {
+                            }
+                            rootNode.getChild("Tower " + selected).getControl(TowerControl.class).getSpatial().addLight(lamp);//doSomething
+                        }
+                    } else {
+                    }
+                }
+                if (name.equals(MAPPING_CHARGE) && !isPressed) {
+                    int budget = stateManager.getState(GamePlayAppState.class).getBudget();
+                    if (budget > 0) {
+                        GPAState.setBudget(budget - 1);
                         try {
-                            rootNode.getChild("Tower " + oldSelected).getControl(TowerControl.class).getSpatial().removeLight(lamp);//do something
+                            rootNode.getChild("Tower " + selected).getControl(TowerControl.class).addCharge();
                         } catch (NullPointerException e) {
                         }
-                        rootNode.getChild("Tower " + selected).getControl(TowerControl.class).getSpatial().addLight(lamp);//doSomething
                     }
-                } else {
                 }
-            }
-            if (name.equals(MAPPING_CHARGE) && !isPressed) {
-                int budget = stateManager.getState(GamePlayAppState.class).getBudget();
-                if (budget > 0) {
-                    state.setBudget(budget - 1);
+
+                if (name.equals(MAPPING_SELECTSPELL1) && !isPressed) {
+                    clearSpellSelection();
+                    GPAState.setFireball(true);
+                }
+
+                if (name.equals(MAPPING_SELECTSPELL2) && !isPressed) {
+                    clearSpellSelection();
+                    GPAState.setFrostBolt(true);
+                }
+                if (name.equals(MAPPING_SELECTSPELL3) && !isPressed) {
+                    clearSpellSelection();
+                    GPAState.setFrostNova(true);
+                }
+                if (name.equals(MAPPING_SELECTSPELL4) && !isPressed) {
+                    clearSpellSelection();
+                    GPAState.setBigSpell(true);
+                }
+
+
+                if (oldSelected != selected) {
                     try {
-                        rootNode.getChild("Tower " + selected).getControl(TowerControl.class).addCharge();
-                    } catch (NullPointerException e) {
+                        rootNode.getChild("Tower " + oldSelected).getControl(TowerControl.class).getSpatial().removeLight(lamp);//do something
+                    } catch (NullPointerException npe) {
                     }
                 }
-            }
+                oldSelected = selected;
 
-            if (name.equals(MAPPING_SELECTSPELL1) && !isPressed) {
-                clearSpellSelection();
-                state.setFireball(true);
             }
-
-            if (name.equals(MAPPING_SELECTSPELL2) && !isPressed) {
-                clearSpellSelection();
-                state.setFrostBolt(true);
-            }
-            if (name.equals(MAPPING_SELECTSPELL3) && !isPressed) {
-                clearSpellSelection();
-                state.setFrostNova(true);
-            }
-            if (name.equals(MAPPING_SELECTSPELL4) && !isPressed) {
-                clearSpellSelection();
-                state.setBigSpell(true);
-            }
-
-
-            if (oldSelected != selected) {
-                try {
-                    rootNode.getChild("Tower " + oldSelected).getControl(TowerControl.class).getSpatial().removeLight(lamp);//do something
-                } catch (NullPointerException npe) {
-                }
-            }
-            oldSelected = selected;
-
         }
     };
 
@@ -377,10 +391,10 @@ public class TowerDefense extends SimpleApplication {
     }
 
     private void clearSpellSelection() {
-        state.setFireball(false);
-        state.setFrostBolt(false);
-        state.setFrostNova(false);
-        state.setBigSpell(false);
+        GPAState.setFireball(false);
+        GPAState.setFrostBolt(false);
+        GPAState.setFrostNova(false);
+        GPAState.setBigSpell(false);
     }
 
     private void addMappingsAndListeners() {
