@@ -71,6 +71,7 @@ public class CreepControl extends AbstractControl implements PhysicsTickListener
 
         //Check if tower in range, and move towards it
         moveTowardsTower = false;
+        fireSize = maxHealth - getHealth();
         if (getHealth() > 0) {
             //Only move if not frozen
             if (!frozen) {
@@ -99,25 +100,24 @@ public class CreepControl extends AbstractControl implements PhysicsTickListener
             GPAState.setBudget(GPAState.getBudget() + 1);
             GPAState.removeCreep(spatial);
             GPAState.setChargeAdded(true);
-            
+            fireSize = 4;
             BAState.getPhysicsSpace().remove(spatial.getControl(BetterCharacterControl.class));
             spatial.removeFromParent();
+            //creepNode.detachChild(fireEmitter);
         }
-        //replace this
+
+        //NOT USED ANYMORE
         if (spatial.getWorldTranslation().z >= -1) {
             GPAState.setHealth(GPAState.getHealth() - 1);
-            System.out.println("Player health: " + GPAState.getHealth());
-            spatial.removeFromParent();
-            fireEmitter.killAllParticles();
-            fireSize = 0; //REMOVE THEM
+            System.out.println("Player health!!!!!: " + GPAState.getHealth());
+            //spatial.removeFromParent();
+            //fireEmitter.killAllParticles();
+            fireSize = 0; 
         }
 
         attackTimer += tpf;
         AttackTowersInRange(tpf);
         reachable.clear();
-
-
-        fireSize = maxHealth - getHealth();
 
         fireEmitter.setStartSize(0.4f * fireSize);
         fireEmitter.setEndSize(0.1f * fireSize);
@@ -190,6 +190,7 @@ public class CreepControl extends AbstractControl implements PhysicsTickListener
     public int getDamage() {
         return (Integer) spatial.getUserData("damage");
     }
+
     public int getXpWorth() {
         return (Integer) spatial.getUserData("xpWorth");
     }

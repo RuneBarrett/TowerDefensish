@@ -73,7 +73,7 @@ public class GamePlayAppState extends AbstractAppState {
     private Mesh spellMesh;
     //private String infoMessage = "";
     private static final String ANI_FLY = "my_animation";
-    //Player settings
+    //Player settings - should be refactored into the playerControl
     private int level = 0;
     private int score = 0;
     private int health = 20;
@@ -142,6 +142,7 @@ public class GamePlayAppState extends AbstractAppState {
 
         initGui();
         playerControl = playerNode.getChild("player").getControl(PlayerControl.class);
+        smallPlayerInfo.setText("      Start killing those ugly things!");
         //bulletAppState.setDebugEnabled(true);
     }
 
@@ -447,9 +448,9 @@ public class GamePlayAppState extends AbstractAppState {
 //        int a = playerControl.getExperience();
 //        int b = playerControl.getXpToNextLevel();
 
-            playerExperience.setText("      XP: " + playerControl.getExperience() + " / " + playerControl.getXpToNextLevel());
-        
-        playerLevel.setText("      Level:     "+playerControl.getLevel());
+        playerExperience.setText("      XP: " + playerControl.getExperience() + " / " + playerControl.getXpToNextLevel());
+
+        playerLevel.setText("      Level:     " + playerControl.getLevel());
 
     }
 

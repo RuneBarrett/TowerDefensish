@@ -94,7 +94,7 @@ public class TowerDefense extends SimpleApplication {
             System.out.println("Time for Act I!");
             GPAState.setWaveCleared(false);
             GPAState.setEnabled(false);
-            GPAState.setSmallPlayerInfoText("      Nice job defending your base!");
+            GPAState.setSmallPlayerInfoText("     Nice job defending your base!");
             flyCam.setEnabled(false);
             stateManager.attach(menuState);
         }
