@@ -13,6 +13,7 @@ import com.jme3.bullet.collision.PhysicsCollisionListener;
 import com.jme3.bullet.control.BetterCharacterControl;
 import com.jme3.effect.ParticleEmitter;
 import com.jme3.effect.ParticleMesh;
+import com.jme3.light.PointLight;
 import com.jme3.material.Material;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.Vector3f;
@@ -22,7 +23,6 @@ import com.jme3.scene.Node;
 import com.jme3.scene.Spatial;
 import com.jme3.scene.control.AbstractControl;
 import java.util.ArrayList;
-import towerDefensish.GamePlayAppState;
 
 /**
  *
@@ -50,6 +50,9 @@ public class CreepControl extends AbstractControl implements PhysicsTickListener
     private Node creepNode;
     private float fireSize = 1;
     //private int temp;
+    private float frozenTime = 3;
+    private float unfreezeTimer = 0;
+    private PointLight FrozenLight;
 
     public CreepControl(GamePlayAppState GPAState, BulletAppState BAState, AssetManager assetManager, Node creepNode) {
         this.GPAState = GPAState;
@@ -61,6 +64,9 @@ public class CreepControl extends AbstractControl implements PhysicsTickListener
         BAState.getPhysicsSpace().addCollisionListener(this);
         maxHealth = this.GPAState.getCreepHealth();
         initFireEffect();
+        FrozenLight = new PointLight();
+        FrozenLight.setColor(new ColorRGBA(0f, 0.3f, 1f, 1f).mult(7));
+        FrozenLight.setPosition(new Vector3f(0, 6, 0));
     }
 
     @Override
@@ -87,12 +93,26 @@ public class CreepControl extends AbstractControl implements PhysicsTickListener
                     }
                 }
                 //if no towers are in range, or if at full health, move towards base
-                if (!moveTowardsTower) {
+                if (!moveTowardsTower && spatial.getWorldTranslation().y < 40f) {
                     spatial.lookAt(basePos, Vector3f.UNIT_Y);
                     moveTowards(creepPos, basePos, tpf);
                 }
             } else {
-                //freeze
+
+                //System.out.println("freeze");
+                    spatial.getControl(BetterCharacterControl.class).setWalkDirection(Vector3f.ZERO);
+                if (unfreezeTimer == 0) {
+                    spatial.addLight(FrozenLight);
+                    //moveTowards(creepPos, basePos, tpf);
+                }
+                
+                unfreezeTimer += tpf;
+                if (unfreezeTimer >= frozenTime) {
+                    spatial.removeLight(FrozenLight);
+                    frozen = false;
+                    System.out.println("unfreeze");
+                    unfreezeTimer = 0;
+                }
             }
             //if health are not bigger than 0, die
         } else {
@@ -100,10 +120,10 @@ public class CreepControl extends AbstractControl implements PhysicsTickListener
             GPAState.setBudget(GPAState.getBudget() + 1);
             GPAState.removeCreep(spatial);
             GPAState.setChargeAdded(true);
-            fireSize = 4;
+            //fireSize = 4;
             BAState.getPhysicsSpace().remove(spatial.getControl(BetterCharacterControl.class));
             spatial.removeFromParent();
-            //creepNode.detachChild(fireEmitter);
+            creepNode.detachChild(fireEmitter);
         }
 
         //NOT USED ANYMORE
@@ -223,5 +243,10 @@ public class CreepControl extends AbstractControl implements PhysicsTickListener
 
     @Override
     protected void controlRender(RenderManager rm, ViewPort vp) {
+    }
+
+    public void freeze(float time) {
+        frozen = true;
+        frozenTime = time;
     }
 }

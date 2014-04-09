@@ -39,7 +39,7 @@ import java.util.ArrayList;
  *
  * @author Rune Barrett
  */
-public class StartScreenAppState extends AbstractAppState {
+public class MenuAppState extends AbstractAppState {
 
     //private final static Trigger TRIGGER_STARTGAME = new KeyTrigger(KeyInput.KEY_SPACE);
     private final static Trigger TRIGGER_STARTGAME = new MouseButtonTrigger(MouseInput.BUTTON_LEFT);

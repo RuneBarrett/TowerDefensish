@@ -115,12 +115,11 @@ public class FireBallControl extends AbstractControl implements PhysicsCollision
         if (event.getNodeA().getName().equals("Fireball") || event.getNodeB().getName().equals("Fireball")) {
             explode = true;
             for (Spatial creep : GPAState.getCreeps()) {
-                if (event.getPositionWorldOnA().distance(creep.getLocalTranslation()) < 25f) {
+                if (event.getPositionWorldOnA().distance(creep.getLocalTranslation()) < 25f || event.getPositionWorldOnB().distance(creep.getLocalTranslation()) < 25f) {
                     influencedCreeps.add(creep);
                     explosionPos = event.getPositionWorldOnA();
                 }
                 //event.getLocalPointA().distance(creep.getLocalTranslation());
-
 
             }
 

@@ -50,7 +50,7 @@ public class TowerDefense extends SimpleApplication {
     private int selected = -1;
     private int oldSelected = -1;
     private GamePlayAppState GPAState;
-    private StartScreenAppState menuState;
+    private MenuAppState menuState;
     private PointLight lamp = new PointLight();
     private boolean shiftHeld;
 
@@ -73,8 +73,9 @@ public class TowerDefense extends SimpleApplication {
         GPAState.setScreenSize(settings.getHeight(), settings.getWidth());
         GPAState.setEnabled(false);
 
-        menuState = new StartScreenAppState();
+        menuState = new MenuAppState();
         stateManager.attach(menuState);
+
 
         inGameSettings();
         initSky();
@@ -95,7 +96,17 @@ public class TowerDefense extends SimpleApplication {
             GPAState.setWaveCleared(false);
             GPAState.setEnabled(false);
             GPAState.setSmallPlayerInfoText("     Nice job defending your base!");
+            GPAState.cleanup();
             flyCam.setEnabled(false);
+            GPAState.fogOff(tpf);
+            stateManager.attach(menuState);
+        }else if(GPAState.getGameLost()){
+                        GPAState.setGameLost(false);
+            GPAState.setEnabled(false);
+            GPAState.setSmallPlayerInfoText("     Well, that was not the kind of base defending you were supposed to do..");
+            GPAState.cleanup();
+            flyCam.setEnabled(false);
+            GPAState.fogOff(tpf);
             stateManager.attach(menuState);
         }
     }

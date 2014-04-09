@@ -11,6 +11,7 @@ import com.jme3.bullet.PhysicsSpace;
 import com.jme3.bullet.PhysicsTickListener;
 import com.jme3.bullet.collision.PhysicsCollisionEvent;
 import com.jme3.bullet.collision.PhysicsCollisionListener;
+import com.jme3.bullet.control.BetterCharacterControl;
 import com.jme3.bullet.control.RigidBodyControl;
 import com.jme3.effect.ParticleEmitter;
 import com.jme3.effect.ParticleMesh;
@@ -21,7 +22,10 @@ import com.jme3.renderer.RenderManager;
 import com.jme3.renderer.ViewPort;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
+import com.jme3.scene.Spatial;
 import com.jme3.scene.control.AbstractControl;
+import java.util.ArrayList;
+import towerDefensish.CreepControl;
 import towerDefensish.GamePlayAppState;
 
 /**
@@ -38,6 +42,13 @@ public class FrostboltControl extends AbstractControl implements PhysicsCollisio
     private final GamePlayAppState GPAState;
     private final BulletAppState BAState;
     private boolean alreadyExploded = false;
+    private ArrayList<Spatial> influencedCreeps;
+    private Vector3f explosionPos;
+    private float freezeTime = 15;
+    private float damageTimer = 5;
+    private int damage = 5;
+
+
 
     public FrostboltControl(GamePlayAppState GPAState, AssetManager assetManager, Node ballNode, Geometry ballGeom, BulletAppState BAState) {
         this.assetManager = assetManager;
@@ -45,7 +56,7 @@ public class FrostboltControl extends AbstractControl implements PhysicsCollisio
         this.ballGeom = ballGeom;
         this.GPAState = GPAState;
         this.BAState = BAState;
-
+        influencedCreeps = new ArrayList<Spatial>();
         initFrostEffect();
     }
 
@@ -58,6 +69,27 @@ public class FrostboltControl extends AbstractControl implements PhysicsCollisio
             alreadyExploded = true;
         }
         explode = false;
+
+        explode = false;
+        damageTimer += tpf;
+        if (!influencedCreeps.isEmpty() && damageTimer > 2) {
+            damageTimer = 0f;
+            for (Spatial influencedCreep : influencedCreeps) {
+                influencedCreep.getControl(CreepControl.class).freeze(freezeTime);
+                influencedCreep.getControl(CreepControl.class).setHealth(influencedCreep.getControl(CreepControl.class).getHealth() - getDamage());
+                System.out.println("Fireball at " + influencedCreep.getName() + " - Health: " + influencedCreep.getControl(CreepControl.class).getHealth());
+
+                if (influencedCreep.getWorldTranslation().y - 5 < explosionPos.y) {
+                    //Move away from base
+                    influencedCreep.getControl(BetterCharacterControl.class).setWalkDirection(explosionPos.negate().negate());
+
+                } else if (influencedCreep.getWorldTranslation().y + 5 > explosionPos.y) {
+                    //Move towards base
+                    influencedCreep.getControl(BetterCharacterControl.class).setWalkDirection(explosionPos.negate());
+                }
+                influencedCreep.getControl(BetterCharacterControl.class).jump();
+            }
+        }
     }
 
     @Override
@@ -94,7 +126,15 @@ public class FrostboltControl extends AbstractControl implements PhysicsCollisio
 
     public void collision(PhysicsCollisionEvent event) {
         if (event.getNodeA().getName().equals("Frostbolt") || event.getNodeB().getName().equals("Frostbolt")) {
+            influencedCreeps.clear();
             explode = true;
+            for (Spatial creep : GPAState.getCreeps()) {
+                if (event.getPositionWorldOnA().distance(creep.getLocalTranslation()) < 35f || event.getPositionWorldOnB().distance(creep.getLocalTranslation()) < 25f) {
+                    influencedCreeps.add(creep);
+                    explosionPos = event.getPositionWorldOnA();
+                }
+                //event.getLocalPointA().distance(creep.getLocalTranslation());
+            }
         }
     }
 
@@ -102,5 +142,9 @@ public class FrostboltControl extends AbstractControl implements PhysicsCollisio
     }
 
     public void physicsTick(PhysicsSpace space, float tpf) {
+    }
+    
+    public int getDamage() {
+        return damage;
     }
 }

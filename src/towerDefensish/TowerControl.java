@@ -4,10 +4,17 @@
  */
 package towerDefensish;
 
+import com.jme3.asset.AssetManager;
 import com.jme3.bullet.BulletAppState;
 import com.jme3.bullet.control.RigidBodyControl;
+import com.jme3.effect.ParticleEmitter;
+import com.jme3.effect.ParticleMesh;
+import com.jme3.material.Material;
+import com.jme3.math.ColorRGBA;
+import com.jme3.math.Vector3f;
 import com.jme3.renderer.RenderManager;
 import com.jme3.renderer.ViewPort;
+import com.jme3.scene.Node;
 import com.jme3.scene.Spatial;
 import com.jme3.scene.control.AbstractControl;
 import java.util.ArrayList;
@@ -27,12 +34,19 @@ public class TowerControl extends AbstractControl {
     boolean alreadyShot = false;
     private float damageTimer = 0;
     private BulletAppState BAState;
+    private AssetManager assetManager;
+    private ParticleEmitter blueFireEmitter;
+    private float blueFireSize = 2f;
+    private Node towerNode;
 
-    public TowerControl(GamePlayAppState GPAState, BulletAppState BAState) {
+    public TowerControl(GamePlayAppState GPAState, BulletAppState BAState, AssetManager assetManager, Node towerNode) {
         this.GPAState = GPAState;
         this.reachable = new ArrayList<CreepControl>();
         this.charges = new ArrayList<Charges>();
         this.BAState = BAState;
+        this.assetManager = assetManager;
+        this.towerNode = towerNode;
+        initFireEffect();
         //charges.add(new Charges(1, 100));     //for testing   
     }
 
@@ -43,11 +57,14 @@ public class TowerControl extends AbstractControl {
         shootAtCreepsInRange(tpf);
         reachable.clear();
         damageTimer += tpf;
-        if(getHealth()<=0){
-        BAState.getPhysicsSpace().remove(spatial.getControl(RigidBodyControl.class));
-        spatial.removeFromParent();
-        GPAState.getTowers().remove(spatial);
+        if (getHealth() <= 0) {
+            BAState.getPhysicsSpace().remove(spatial.getControl(RigidBodyControl.class));
+            spatial.removeFromParent();
+            GPAState.getTowers().remove(spatial);
         }
+        Vector3f tPos = spatial.getLocalTranslation();
+        Vector3f firePos = new Vector3f(tPos.x, tPos.y+13.6f, tPos.z);
+        blueFireEmitter.setLocalTranslation(firePos);
     }
 
     private void shootAtCreepsInRange(float tpf) {
@@ -90,6 +107,31 @@ public class TowerControl extends AbstractControl {
         }
     }
 
+    private void initFireEffect() {
+        //BAState.getPhysicsSpace().addCollisionListener(this);
+        blueFireEmitter = new ParticleEmitter("FireballTail", ParticleMesh.Type.Triangle, 30);
+        Material fireMat = new Material(assetManager, "Common/MatDefs/Misc/Particle.j3md");
+        fireMat.setTexture("Texture", assetManager.loadTexture("Effects/flame.png"));
+        blueFireEmitter.setMaterial(fireMat);
+
+        blueFireEmitter.setImagesX(2);
+        blueFireEmitter.setImagesY(2);
+        blueFireEmitter.setRandomAngle(true);
+        blueFireEmitter.setSelectRandomImage(true);
+        blueFireEmitter.setStartColor(new ColorRGBA(0f, .5f, 1f, 1f));
+        blueFireEmitter.setEndColor(new ColorRGBA(0.0f, 0.0f, 1f, 0f));
+        blueFireEmitter.setGravity(0, 0, 0);
+        blueFireEmitter.setStartSize(0.5f * blueFireSize);
+        blueFireEmitter.setEndSize(0.1f * blueFireSize);
+        blueFireEmitter.setLowLife(0.5f);
+        blueFireEmitter.setHighLife(2f);
+        blueFireEmitter.getParticleInfluencer().setVelocityVariation(0.2f);
+        blueFireEmitter.getParticleInfluencer().setInitialVelocity(new Vector3f(0, 10f, 0));
+
+        towerNode.attachChild(blueFireEmitter);
+    }
+
+    //not used anymore
     public void reduceHealth(int damage) {
         if (damageTimer > 5F) {
             int oldHp = (Integer) spatial.getUserData("health");
@@ -98,8 +140,8 @@ public class TowerControl extends AbstractControl {
             damageTimer = 0;
         }
     }
-    
-    public void setHealth(int newHealth){
+
+    public void setHealth(int newHealth) {
         spatial.setUserData("health", newHealth);
     }
 

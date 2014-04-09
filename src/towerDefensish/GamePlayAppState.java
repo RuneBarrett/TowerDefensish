@@ -16,7 +16,11 @@ import com.jme3.app.state.AppStateManager;
 import com.jme3.asset.AssetManager;
 import com.jme3.asset.TextureKey;
 import com.jme3.bullet.BulletAppState;
+import com.jme3.bullet.collision.PhysicsCollisionObject;
+import com.jme3.bullet.collision.shapes.MeshCollisionShape;
+import com.jme3.bullet.collision.shapes.SphereCollisionShape;
 import com.jme3.bullet.control.BetterCharacterControl;
+import com.jme3.bullet.control.GhostControl;
 import com.jme3.bullet.control.RigidBodyControl;
 import com.jme3.collision.CollisionResults;
 import com.jme3.font.BitmapFont;
@@ -31,6 +35,8 @@ import com.jme3.math.Quaternion;
 import com.jme3.math.Ray;
 import com.jme3.math.Vector2f;
 import com.jme3.math.Vector3f;
+import com.jme3.post.FilterPostProcessor;
+import com.jme3.post.filters.FogFilter;
 import com.jme3.renderer.Camera;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Mesh;
@@ -71,7 +77,6 @@ public class GamePlayAppState extends AbstractAppState {
     private ArrayList<Spatial> creeps;
     private ArrayList<Spatial> towers;
     private Mesh spellMesh;
-    //private String infoMessage = "";
     private static final String ANI_FLY = "my_animation";
     //Player settings - should be refactored into the playerControl
     private int level = 0;
@@ -108,7 +113,7 @@ public class GamePlayAppState extends AbstractAppState {
     private float infoTimer;
     private float budgetTimer = 0;
     private float beamTimer = 0;
-    private int numOfCreeps = 5;
+    private int numOfCreeps = 20;
     private int creepHealth = 12;
     private int bNum = 0;
     private boolean chargeAdded = false;
@@ -117,6 +122,13 @@ public class GamePlayAppState extends AbstractAppState {
     private float cooldown;
     private boolean wavecleared = false;
     private boolean waveAlreadyCleared = false;
+    private FilterPostProcessor fpp;
+    private FogFilter fogFilter;
+    private DirectionalLight sun;
+    private Node collisionNode;
+    private boolean gameLost = false;
+    ;
+    private float gameLostTimer = 0;
 
     @Override
     public void initialize(AppStateManager stateManager, Application app) {
@@ -140,6 +152,15 @@ public class GamePlayAppState extends AbstractAppState {
         createCreeps(numOfCreeps);
         createTowers();
 
+        fpp = new FilterPostProcessor(assetManager);
+        app.getViewPort().addProcessor(fpp);
+
+        fogFilter = new FogFilter();
+        fogFilter.setFogDistance(300);
+        fogFilter.setFogDensity(0.7f);
+        //fogFilter.setFogColor(ColorRGBA.Black);
+        fpp.addFilter(fogFilter);
+
         initGui();
         playerControl = playerNode.getChild("player").getControl(PlayerControl.class);
         smallPlayerInfo.setText("      Start killing those ugly things!");
@@ -148,12 +169,18 @@ public class GamePlayAppState extends AbstractAppState {
 
     @Override
     public void update(float tpf) {
+        collisionNode.setLocalTranslation(ballNode.getLocalTranslation());
         update2DGui(tpf);
         if (health <= 0) {
-            System.out.println("The player lost.");
-            lastGameWon = false;
-
-            playerControl.setDead(true);
+            if (gameLostTimer == 0) {
+                System.out.println("The player lost.");
+                lastGameWon = false;
+                playerControl.setDead(true);
+            }
+            gameLostTimer += tpf;
+            if (gameLostTimer > 8f) {
+                gameLost = true;
+            }
 
         } else if (creeps.isEmpty()) {
             if (!waveAlreadyCleared) {
@@ -182,9 +209,12 @@ public class GamePlayAppState extends AbstractAppState {
         if (cooldown < 0) {
             cooldown = 8;
             Geometry ballGeo = new Geometry("NormalSpell", spellMesh);
+
             Material mat = new Material(assetManager, "Common/MatDefs/Light/Lighting.j3md");
             ballGeo.setMaterial(mat);
             ballGeo.setLocalTranslation(cam.getLocation());
+            Geometry ballGhost = new Geometry("BallGhost");
+            ballGhost.setLocalTranslation(ballGeo.getLocalTranslation());
 
             TextureKey wood = new TextureKey("Interface/Pics/wood.png", false);
             mat.setTexture("DiffuseMap", assetManager.loadTexture(wood));
@@ -221,15 +251,25 @@ public class GamePlayAppState extends AbstractAppState {
             }
             mat.setColor("Specular", ColorRGBA.White.mult(ColorRGBA.Red));
             mat.setFloat("Shininess", 200f);
+
+
+            //ballGhost.addControl(ghost);
+            //ballNode.addControl(ghost);
+            //ghost.removeCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_01);
+            //ghost.addCollideWithGroup(PhysicsCollisionObject.COLLISION_GROUP_NONE);
+            //collisionNode.addControl(ghost);
             ballNode.attachChild(ballGeo);
 
-
-            ballPhy = new RigidBodyControl(70.5f);
+            //GhostControl ghost = new GhostControl(new SphereCollisionShape(10));
+            ballPhy = new RigidBodyControl(50.5f);
             ballGeo.addControl(ballPhy);
+            //ballGeo.addControl(ghost);
             bulletAppState.getPhysicsSpace().add(ballPhy);
+            //bulletAppState.getPhysicsSpace().add(ghost);
             ballPhy.setCcdSweptSphereRadius(.1f);
             ballPhy.setCcdMotionThreshold(0.001f);
             ballPhy.setAngularVelocity(new Vector3f(-FastMath.nextRandomFloat() * 25, FastMath.nextRandomFloat() * 5 - 5, FastMath.nextRandomFloat() * 5 - 5));
+
 
 
             ballPhy.setLinearVelocity(cam.getDirection().mult(65));
@@ -245,7 +285,9 @@ public class GamePlayAppState extends AbstractAppState {
         creepNode = new Node("creepNode");
         beamNode = new Node("beamNode");
         ballNode = new Node("ballNode");
+        collisionNode = new Node("collisionNode");
         explosionNode = new Node("explosionNode");
+        rootNode.attachChild(collisionNode);
         rootNode.attachChild(playerNode);
         rootNode.attachChild(towerNode);
         rootNode.attachChild(creepNode);
@@ -303,7 +345,7 @@ public class GamePlayAppState extends AbstractAppState {
             tower.setUserData("height", 13.3f);
             tower.setUserData("health", 5);
             tower.scale(3.0f);
-            tower.addControl(new TowerControl(this, bulletAppState));
+            tower.addControl(new TowerControl(this, bulletAppState, assetManager, towerNode));
             towerNode.attachChild(tower);
 
             towerPhy = new RigidBodyControl(0f);
@@ -325,7 +367,7 @@ public class GamePlayAppState extends AbstractAppState {
         for (int i = 0; i < num; i++) {
 
             v = new Vector3f(FastMath.nextRandomFloat() * creepX - creepX / 2,//X
-                    FastMath.nextRandomFloat() * 200.0f + 5,//Y
+                    FastMath.nextRandomFloat() * 400.0f + 5,//Y
                     FastMath.nextRandomFloat() * creepZ - (creepZ + 50));//Z
 
             Node creep = (Node) assetManager.loadModel("Textures/Creeps/FlySnakeCar/FlySnakeCar.mesh.xml");
@@ -341,7 +383,7 @@ public class GamePlayAppState extends AbstractAppState {
             mat.setTexture("DiffuseMap", assetManager.loadTexture(flameLook));
 
             creep.setMaterial(mat);
-            creep.scale(2.0f);
+            creep.scale(2.8f);
             creep.setName("Creep" + i);
             creep.setLocalTranslation(v);
             creep.setUserData("index", i);
@@ -350,7 +392,7 @@ public class GamePlayAppState extends AbstractAppState {
             creep.setUserData("xpWorth", 5);
             creep.addControl(new CreepControl(this, bulletAppState, assetManager, creepNode));
 
-            creepPhy = new BetterCharacterControl(2.5f, 0.1f, 2f);
+            creepPhy = new BetterCharacterControl(2.5f, 0.1f, 20f);
             creep.addControl(creepPhy);
             bulletAppState.getPhysicsSpace().add(creepPhy);
 
@@ -384,7 +426,7 @@ public class GamePlayAppState extends AbstractAppState {
         ChargedLight.setColor(ColorRGBA.Yellow);
 
         //Sun
-        DirectionalLight sun = new DirectionalLight();
+        sun = new DirectionalLight();
         sun.setDirection((new Vector3f(-0.8f, -0.5f, -0.5f)));
         sun.setColor(ColorRGBA.White.mult(1.6f));
         AmbientLight al = new AmbientLight();
@@ -502,7 +544,7 @@ public class GamePlayAppState extends AbstractAppState {
         playerHealth = new BitmapText(guiFont);
         playerHealth.setSize(guiFont.getCharSet().getRenderedSize());
         playerHealth.move(1, // X
-                screenHeight - playerHealth.getHeight() * 2 - 10, // Y
+                screenHeight - playerHealth.getHeight() * 6 - 10, // Y
                 0); // Z (depth layer)
         guiNode.attachChild(playerHealth);
 
@@ -510,7 +552,7 @@ public class GamePlayAppState extends AbstractAppState {
         playerMana = new BitmapText(guiFont);
         playerMana.setSize(guiFont.getCharSet().getRenderedSize());
         playerMana.move(1, // X
-                screenHeight - playerMana.getHeight() * 3 - 10, // Y
+                screenHeight - playerMana.getHeight() * 7 - 10, // Y
                 0); // Z (depth layer)
         guiNode.attachChild(playerMana);
 
@@ -518,7 +560,7 @@ public class GamePlayAppState extends AbstractAppState {
         playerCharges = new BitmapText(guiFont);
         playerCharges.setSize(guiFont.getCharSet().getRenderedSize());
         playerCharges.move(1, // X
-                screenHeight - playerHealth.getHeight() * 4 - 10, // Y
+                screenHeight - playerHealth.getHeight() * 5 - 10, // Y
                 0); // Z (depth layer)
         guiNode.attachChild(playerCharges);
 
@@ -526,7 +568,7 @@ public class GamePlayAppState extends AbstractAppState {
         playerCreepCount = new BitmapText(guiFont);
         playerCreepCount.setSize(guiFont.getCharSet().getRenderedSize());
         playerCreepCount.move(1, // X
-                screenHeight - playerCreepCount.getHeight() * 5 - 10, // Y
+                screenHeight - playerCreepCount.getHeight() * 4 - 10, // Y
                 0); // Z (depth layer)
         guiNode.attachChild(playerCreepCount);
 
@@ -534,7 +576,7 @@ public class GamePlayAppState extends AbstractAppState {
         playerLevel = new BitmapText(guiFont);
         playerLevel.setSize(guiFont.getCharSet().getRenderedSize());
         playerLevel.move(1, // X
-                screenHeight - playerLevel.getHeight() * 6 - 10, // Y
+                screenHeight - playerLevel.getHeight() * 2 - 10, // Y
                 0); // Z (depth layer)
         guiNode.attachChild(playerLevel);
 
@@ -542,7 +584,7 @@ public class GamePlayAppState extends AbstractAppState {
         playerExperience = new BitmapText(guiFont);
         playerExperience.setSize(guiFont.getCharSet().getRenderedSize());
         playerExperience.move(1, // X
-                screenHeight - playerExperience.getHeight() * 7 - 10, // Y
+                screenHeight - playerExperience.getHeight() * 3 - 10, // Y
                 0); // Z (depth layer)
         guiNode.attachChild(playerExperience);
 
@@ -599,6 +641,12 @@ public class GamePlayAppState extends AbstractAppState {
 
     @Override
     public void cleanup() {
+        //setSmallPlayerInfoText("     Nice job defending your base!");
+        //rootNode.detachChild(creepNode);
+        rootNode.removeLight(sun);
+        playerHealth.setText("");
+        playerCharges.setText("");
+        playerMana.setText("");
     }
 
     // Only accessors and mutators below
@@ -738,7 +786,23 @@ public class GamePlayAppState extends AbstractAppState {
         mana = maxMana;
     }
 
-    void setSmallPlayerInfoText(String str) {
+    public void setSmallPlayerInfoText(String str) {
         smallPlayerInfo.setText(str);
+    }
+
+    public void fogOff(float tpf) {
+        while (fogFilter.getFogDensity() > 0.01) {
+            System.out.println(tpf + " - tpf");
+            System.out.println(fogFilter.getFogDensity());
+            fogFilter.setFogDensity(fogFilter.getFogDensity() - (0.1f * tpf));
+        }
+    }
+
+    boolean getGameLost() {
+        return gameLost;
+    }
+
+    void setGameLost(boolean b) {
+        gameLost = b;
     }
 }

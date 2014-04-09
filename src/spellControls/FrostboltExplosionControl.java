@@ -69,47 +69,6 @@ public class FrostboltExplosionControl extends AbstractControl {
         }
     }
 
-    public void simpleUpdate(float tpf) {
-        // this is a timer that triggers a series of effects in the right order
-        time += tpf / 1;
-        if (time > 1.5f && state == 0) {
-            sparksEmitter.emitAllParticles();
-            state++;
-        }
-        if (time > 2.0f && state == 1) {
-            burstEmitter.emitAllParticles();
-            shockwaveEmitter.emitAllParticles();
-            debrisEmitter.emitAllParticles();
-            state++;
-        }
-        if (time > 2.2f && state == 2) {
-            fireEmitter.emitAllParticles();
-            embersEmitter.emitAllParticles();
-            smokeEmitter.emitAllParticles();
-            state++;
-        }
-        if (time > 5.0f && state == 3) {
-            // rewind the effect
-            burstEmitter.killAllParticles();
-            sparksEmitter.killAllParticles();
-            debrisEmitter.killAllParticles();
-            shockwaveEmitter.killAllParticles();
-            state++;
-        }
-        if (time > 8.0f && state == 4) {
-            // rewind the effect
-            smokeEmitter.killAllParticles();
-            embersEmitter.killAllParticles();
-            fireEmitter.killAllParticles();
-            state++;
-        }
-        if (time > 8.5f && state == 5) {
-            // restart the effect
-//      state = 0;
-//      time = 0;
-        }
-    }
-
     private void initFire() {
         fireEmitter = new ParticleEmitter("Emitter", ParticleMesh.Type.Triangle, 100);
         Material fireMat = new Material(assetManager, "Common/MatDefs/Misc/Particle.j3md");
